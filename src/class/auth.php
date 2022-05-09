@@ -21,7 +21,7 @@ class Auth {
                 break;
             
             default:
-                $roles = ["leer", "actualizar", "agregar"];
+                $roles = ["leer", "eliminar", "actualizar", "agregar"];
                 break;
         }
 
