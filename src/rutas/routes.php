@@ -461,11 +461,100 @@ $app->get('/api/desplegables/estados[/{id}]', function (Request $request, Respon
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////                   
 
 $app->get('/api/reportes/unico[/{params:.*}]', function (Request $request, Response $response, $args) {
-                
-    $sql = "SELECT * FROM `sistemas`";
-                $db = New DB();
+    $params = EliminarBarrasURL($args['params']);  
+    /*
+    0 - Tipo de consulta ($Tabla a consultar)
+    1 - id del reporte
+    2 - 
+    3 -      */ 
+    $db = New DB();
+    /**/
+    $TablaConsultar = [
+        'produccion',//0 
+        'rehabilitacion_pozo',//1 
+        'fugas',//2 
+        'tomas_ilegales',//3 
+        'reparaciones_brippas',//4
+        'afectaciones',//5 
+        'operatividad_abastecimiento',//6
+        'pozo',//7
+        'brippas',//8
+        'sistemas'//9
+    ];
+
+   
     
-         return json_encode($db->consultaAll('mapa',$sql));
+    if (!empty($params[0]) && is_numeric($params[0])) {
+        if (($params[0] >= 0) && ($params[0] <= 6)) {
+            $params[0] = $params[0] + 0;
+            $valorSQL = $TablaConsultar[$params[0]];
+        }else {
+            return 'TABLA A CONSULTAR NO VALIDA';
+        }
+    }else {
+        return 'PARAMETROS DE BUSQUEDA NO VALIDOS';
+    }
+    
+
+    if (count($params) === 2) {
+        
+        if (($params[0] === 1) || ($params[0] === 5) || ($params[0] === 4)) {
+            switch ($params[0]) {
+                case 1:
+                    $valorSQL2 = $TablaConsultar[7];
+                    
+                    break;
+
+                case 5:
+                    $valorSQL2 = $TablaConsultar[9];
+                    break;
+
+                case 4:
+                    $valorSQL2 = $TablaConsultar[8];
+                    break;
+                
+                default:
+                $valorSQL2 = null;
+                    break;
+            }
+            $sql = "SELECT $valorSQL.*, `estados`.`estado`, $valorSQL2.*,reporte.fecha
+                    FROM $valorSQL 
+                        LEFT JOIN $valorSQL2 ON $valorSQL.id_$valorSQL2 = $valorSQL2.id
+                        LEFT JOIN `estados` ON $valorSQL2.id_estado = `estados`.`id_estado`
+	                    LEFT JOIN `reporte` ON $valorSQL.`id_reporte` = `reporte`.`id`
+
+                        WHERE $valorSQL2.id = ?";
+            
+            
+
+
+            
+
+
+        }else {
+
+            $sql = "SELECT $valorSQL.*, `estados`.`estado`,`reporte`.`fecha`
+                    FROM $valorSQL 
+                        LEFT JOIN `estados` ON $valorSQL.`id_estado` = `estados`.`id_estado`
+	                    LEFT JOIN `reporte` ON $valorSQL.`id_reporte` = `reporte`.`id`
+
+                        WHERE $valorSQL.id = ?";
+
+        
+        }
+            $reporte= $db->consultaAll('mapa',$sql, [$params[1]]);
+     
+            return json_encode($reporte);
+        
+    }elseif (count($params) === 3) {
+
+        
+    }elseif (count($params) === 4) {
+        
+    }else {
+        return 'FALTAN O SOBRAN INSERTAR PARAMETROS PARA SOLICITAR EL REPORTE';
+    }
+    
             
 });
 
@@ -490,6 +579,8 @@ $app->get('/api/reportes/emp[/{params:.*}]', function (Request $request, Respons
         'brippas',//8
         'sistemas'//9
     ];
+
+   
     
     if (!empty($params[0]) && is_numeric($params[0])) {
         if (($params[0] >= 0) && ($params[0] <= 6)) {
