@@ -171,6 +171,10 @@ $app->group('/api/user/', function () use ($app) {
             $e->getMessage();
         }
     });
+
+
+
+    
 });
 
 
@@ -454,11 +458,22 @@ $app->get('/api/desplegables/estados[/{id}]', function (Request $request, Respon
                     $db = New DB();
         
              return json_encode($db->consultaAll('mapa',$sql));
+
                 
     });
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////                   
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////      
+$app->get('/api/pozo/{id_pozo}', function (Request $request, Response $response) {
+    $id = $request->getAttribute('id_pozo');
+
+    $sql = "SELECT * FROM pozo WHERE pozo.id = ?";
+    $db = New DB();
+    
+    return json_encode($db->consultaAll('mapa',$sql,[$id]));  
+                   
+});
+
 
 $app->get('/api/reportes/unico[/{params:.*}]', function (Request $request, Response $response, $args) {
     $params = EliminarBarrasURL($args['params']);  
@@ -468,7 +483,7 @@ $app->get('/api/reportes/unico[/{params:.*}]', function (Request $request, Respo
     2 - 
     3 -      */ 
     $db = New DB();
-    /**/
+  
     $TablaConsultar = [
         'produccion',//0 
         'rehabilitacion_pozo',//1 
@@ -811,9 +826,10 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
 //|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 //|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
-$app->post('/api/formulaios/reportes', function (Request $request, Response $response) {
+$app->post('/api/formularios/reportes', function (Request $request, Response $response) {
     $body = json_decode($request->getBody());
     $TablaConsultar = ['produccion','rehabilitacion_pozo','fugas','tomas_ilegales','reparaciones_brippas','afectaciones','operatividad_abastecimiento','pozo','brippas','sistemas'];
+    
     $tablasInsertar=[
     ['`metros_cubicos`', '`id_estado`', '`id_reporte`'],
     ['`lps`', '`id_pozo`', '`id_reporte`'],
@@ -828,8 +844,20 @@ $app->post('/api/formulaios/reportes', function (Request $request, Response $res
 
     ];
 
+    $tipoDatos = [//Tipo de datos a ingresar en cada formulario
+        ["integer", "integer"],                                                                 //produccion
+        ["integer", "integer"],                                                                 //rehabilitacion_pozo
+        ["string", "integer", "integer", "integer", "string" , "integer"],                      //fugas
+        ["string", "integer", "integer", "integer", "string" , "integer", "integer"],           //tomas_ilegales
+        ["integer", "integer", "integer", "integer", "integer"],                                //reparaciones_brippas
+        ["integer", "integer", "integer", "integer", "integer" , "integer"],                    //afectaciones
+        ["integer", "integer", "integer", "string"],                                            //operatividad_abastecimiento
+        ["string", "integer", "integer", "integer", "integer", "integer", "string", "integer"], //pozo
+        ["string", "integer", "integer", "integer", "string", "integer", "integer", "integer"], //brippas
+        ["string", "integer", "integer", "integer"]                                             //sistemas
+    ];
 
-    
+
     
     if (!empty($body->{'valores_insertar'})) {
         if (end($body->{'valores_insertar'}) === "reporte") {
@@ -855,6 +883,13 @@ $app->post('/api/formulaios/reportes', function (Request $request, Response $res
             $sqlFormulario = generarSqlRegistro($tablasInsertar[$body->{'tipo_formulario'}], $body->{'tipo_formulario'}, $TablaConsultar[$body->{'tipo_formulario'}]);
 
             $values = array_slice($body->{'valores_insertar'},2,-1);
+            $validacion = validarDatosFormulario($values,$body->{'tipo_formulario'},$tipoDatos[$body->{'tipo_formulario'}]);
+
+
+            if ($validacion !== 'OK') {
+                return  $validacion;
+            }
+    
             $db = new DB();
 
             $stmt = $db->consultaAll('mapa', $sqlreporte, [$body->{'valores_insertar'}[0], $body->{'valores_insertar'}[1]]);
@@ -872,6 +907,14 @@ $app->post('/api/formulaios/reportes', function (Request $request, Response $res
 
         }elseif(($body->{'tipo_formulario'} >= 7) AND ($body->{'tipo_formulario'} <=9)){
             $sqlFormulario = generarSqlRegistro($tablasInsertar[$body->{'tipo_formulario'}], $body->{'tipo_formulario'}, $TablaConsultar[$body->{'tipo_formulario'}]);
+            
+            $validacion = validarDatosFormulario($values,$body->{'tipo_formulario'},$tipoDatos[$body->{'tipo_formulario'}]);
+
+
+            if ($validacion !== 'OK') {
+                return  $validacion;
+            }
+            
             $db = new DB();
             $stmt = $db->consultaAll('mapa', $sqlFormulario, $body->{'valores_insertar'});
             if ($stmt) {
@@ -891,4 +934,110 @@ $app->post('/api/formulaios/reportes', function (Request $request, Response $res
     }
    
 
+});
+
+
+$app->post('/api/reportes/eliminar', function (Request $request, Response $response) { 
+    $db = new DB();
+    $body = json_decode($request->getBody());
+
+// DATOS = TIPO DE INFORME/CONSULTA
+//ID DEL INFORME A ELIMINAR
+    $TablaConsultar = 
+    ['produccion'
+    ,'rehabilitacion_pozo'
+    ,'fugas'
+    ,'tomas_ilegales'
+    ,'reparaciones_brippas'
+    ,'afectaciones'
+    ,'operatividad_abastecimiento'
+    ,'pozo'
+    ,'brippas'
+    ,'sistemas'];
+
+    
+
+    
+    if (isset($body->{'id_informe'}) && is_numeric($body->{'id_informe'})) {
+        if (($body->{'id_informe'} >= 0) && ($body->{'id_informe'} <= 6)) {
+            $valorSQL = $TablaConsultar[$body->{'id_formulario'}];
+            $sql1 = "SELECT $valorSQL.* FROM $valorSQL";
+            $consulta = $db->consultaAll('mapa', $sql1);
+        }else {
+            return 'TABLA A CONSULTAR NO VALIDA';
+        }
+    }else {
+        return 'PARAMETROS DE BUSQUEDA NO VALIDOS';
+    }
+
+    if ($consulta) {
+        
+
+        try {
+            $sql = "DELETE FROM $valorSQL WHERE $valorSQL.`id` = ?";
+            $stmt = $db->consultaAll('mapa', $sql, [$body->{'id_informe'}]);
+
+
+            if ($stmt) {
+
+                $sql = "DELETE FROM reporte WHERE reporte.id = ?";
+                $stmt = $db->consultaAll('mapa', $sql, [$consulta[0]["id_reporte"]]);
+                if ($stmt) {
+                    return 'INFORME ELIMINADO';
+                }else {
+                    return 'HUBO UN ERROR EN LA ELIMINACION DEL INFORME';
+                }        
+            }else {
+                return 'HUBO UN ERROR EN LA ELIMINACION DEL INFORME';
+            }
+            
+            } 
+        catch (MySQLDuplicateKeyException $e) {
+            $e->getMessage();
+        }
+        catch (MySQLException $e) {
+            $e->getMessage();
+        }
+        catch (Exception $e) {
+            $e->getMessage();
+        }
+    }
+    
+    
+    
+        
+        
+     
+});
+
+
+
+$app->put('/api/actualizacion/pozo', function (Request $request, Response $response) { 
+    $body = json_decode($request->getBody());
+    /*
+    DATOS
+    OPERATIVIDAD (1-0)
+    ID DEL POZO A ACTUALIZAR
+
+    */
+    try {
+        $sql = "UPDATE `pozo` SET `operatividad` = ? WHERE `pozo`.`id` = ?";
+        $db = new DB();
+        $stmt = $db->consultaAll('mapa', $sql, [$body->{'operatividad'}, $body->{'id_pozo'}]);
+        if ($stmt) {
+            return 'POZO ACTUALIZADO';          
+        }else {
+            return 'HUBO UN ERROR EN LA ACTUALIZACION';
+        }
+        
+        } 
+    catch (MySQLDuplicateKeyException $e) {
+        $e->getMessage();
+    }
+    catch (MySQLException $e) {
+        $e->getMessage();
+    }
+    catch (Exception $e) {
+        $e->getMessage();
+    }
 });
