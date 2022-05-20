@@ -573,7 +573,7 @@ $app->get('/api/reportes/unico[/{params:.*}]', function (Request $request, Respo
             
 });
 
-$app->get('/api/reportes/emp[/{params:.*}]', function (Request $request, Response $response, $args) {
+$app->get('/api/reportes/estado[/{params:.*}]', function (Request $request, Response $response, $args) {
     $params = EliminarBarrasURL($args['params']);   
     /*
     0 - Tipo de formulario ($Tabla a consultar)
@@ -687,15 +687,11 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
     'pozo',//7
     'brippas',//8
     'sistemas'//9
-];
-
-
+    ];
     
-    $db = New DB();
+    $db = New DB();    
 
-    
-
-    if (!empty($params[0]) && is_numeric($params[0])) {
+    if (isset($params[0]) && is_numeric($params[0])) {
         if (($params[0] >= 0) && ($params[0] <= 6)) {
             $params[0] = $params[0] + 0;
         }else {
@@ -814,6 +810,106 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
 });
 ////////////////////////////////////////////////////FIN/////////////////////////////////////////////////////// 
 
+//////////////////////////////////////////////////////DASH/////////////////////////////////////////
+
+     
+    $app->get('/api/dashboard/ultimos_reportes', function (Request $request, Response $response) {
+                
+        $sql = "SELECT `reporte`.*, tablas.tipo_reporte
+        FROM `reporte`
+        LEFT JOIN tablas ON reporte.id_tabla = tablas.id
+        ";
+        $db = New DB();
+
+        $ultimos_reportes = $db->consultaAll('mapa',$sql);
+        $values = array_slice($ultimos_reportes,-5);
+
+             return json_encode($values);
+
+                
+    });
+
+
+    $app->get('/api/dashboard/lps_recuperados/{id_estado}', function (Request $request, Response $response) {
+              $id = $request->getAttribute('id_estado');  
+
+        $sql = "SELECT `reporte`.`fecha`, SUM(`rehabilitacion_pozo`.`lps`), `pozo`.`id_estado`, `estados`.`estado`
+        FROM `reporte` 
+            LEFT JOIN `rehabilitacion_pozo` ON `rehabilitacion_pozo`.`id_reporte` = `reporte`.`id` 
+            LEFT JOIN `pozo` ON `rehabilitacion_pozo`.`id_pozo` = `pozo`.`id` 
+            LEFT JOIN `estados` ON `pozo`.`id_estado` = `estados`.`id_estado`
+            WHERE pozo.id_estado = ?
+            GROUP BY (reporte.fecha)";
+        $db = New DB();
+
+             return json_encode($db->consultaAll('mapa',$sql, [$id]));
+
+                
+    });
+
+
+
+
+    $app->get('/api/dashboard/tomas_ilegales/{id_estado}', function (Request $request, Response $response) {
+              $id = $request->getAttribute('id_estado');
+
+        $sql = "SELECT `reporte`.`fecha`, SUM(`tomas_ilegales`.`cantidad_tomas_eliminadas`), `estados`.`estado`
+        FROM `reporte` 
+            LEFT JOIN `tomas_ilegales` ON `tomas_ilegales`.`id_reporte` = `reporte`.`id` 
+            LEFT JOIN `estados` ON `tomas_ilegales`.`id_estado` = `estados`.`id_estado`
+            WHERE tomas_ilegales.id_estado = ?
+            GROUP BY (reporte.fecha)";
+        $db = New DB();
+
+             return json_encode($db->consultaAll('mapa',$sql, [$id]));
+
+            });
+     
+
+
+
+    $app->get('/api/dashboard/fugas/{id_estado}', function (Request $request, Response $response) {
+              $id = $request->getAttribute('id_estado'); 
+
+        $sql = "SELECT `reporte`.`fecha`, SUM(`fugas`.`cantidad_fugas_reparadas`), `estados`.`estado`
+            FROM `reporte` 
+            LEFT JOIN `fugas` ON `fugas`.`id_reporte` = `reporte`.`id` 
+            LEFT JOIN `estados` ON `fugas`.`id_estado` = `estados`.`id_estado`
+            WHERE tomas_ilegales.id_estado = ?
+            GROUP BY (reporte.fecha)";
+        $db = New DB();
+
+             return json_encode($db->consultaAll('mapa',$sql, [$id]));
+
+                
+    });
+
+
+
+    $app->get('/api/dashboard/pozos_operativos/{id_estado}', function (Request $request, Response $response) {
+              $id = $request->getAttribute('id_estado'); 
+
+        $sql = "SELECT COUNT(`pozo`.`id`) as total,pozo.operatividad, `estados`.`estado`
+        FROM `pozo` 
+            LEFT JOIN `estados` ON `pozo`.`id_estado` = `estados`.`id_estado`
+                WHERE pozo.id_estado = ? AND pozo.operatividad = ?";
+        $db = New DB();
+
+        $array = [
+            "operativos" => $db->consultaAll('mapa',$sql, [$id,1]),
+            "inoperativos" => $db->consultaAll('mapa',$sql, [$id,0])
+        ];
+             return json_encode($array);
+
+                
+    });
+
+
+
+/////////////////////////////////////////////////////////FIN DASHBOARD///////////////////////////////////////////////////////////////
+
+
+
 
 
 
@@ -879,8 +975,8 @@ $app->post('/api/formularios/reportes', function (Request $request, Response $re
         
         
         if (($body->{'tipo_formulario'} >= 0) AND ($body->{'tipo_formulario'} <=6)) {
-            $sqlreporte = "INSERT INTO `reporte` (`id`, `ubicacion_reporte`, `fecha`) VALUES (NULL, ?, ?)";
-            $sqlFormulario = generarSqlRegistro($tablasInsertar[$body->{'tipo_formulario'}], $body->{'tipo_formulario'}, $TablaConsultar[$body->{'tipo_formulario'}]);
+            $sqlreporte = "INSERT INTO `reporte` (`id`, `ubicacion_reporte`, `fecha`, id_tabla) VALUES (NULL, ?, ?,?)";
+            $sqlFormulario = generarSqlRegistro($tablasInsertar[$body->{'tipo_formulario'}], $body->{'tipo_formulario'}, $TablaConsultar[$body->{'tipo_formulario'}],);
 
             $values = array_slice($body->{'valores_insertar'},2,-1);
             $validacion = validarDatosFormulario($values,$body->{'tipo_formulario'},$tipoDatos[$body->{'tipo_formulario'}]);
@@ -892,7 +988,7 @@ $app->post('/api/formularios/reportes', function (Request $request, Response $re
     
             $db = new DB();
 
-            $stmt = $db->consultaAll('mapa', $sqlreporte, [$body->{'valores_insertar'}[0], $body->{'valores_insertar'}[1]]);
+            $stmt = $db->consultaAll('mapa', $sqlreporte, [$body->{'valores_insertar'}[0], $body->{'valores_insertar'}[1],$body->{'tipo_formulario'}]);
             
             if ($stmt) {
                 array_push($values,$stmt->{'insert_id'});
@@ -908,7 +1004,8 @@ $app->post('/api/formularios/reportes', function (Request $request, Response $re
         }elseif(($body->{'tipo_formulario'} >= 7) AND ($body->{'tipo_formulario'} <=9)){
             $sqlFormulario = generarSqlRegistro($tablasInsertar[$body->{'tipo_formulario'}], $body->{'tipo_formulario'}, $TablaConsultar[$body->{'tipo_formulario'}]);
             
-            $validacion = validarDatosFormulario($values,$body->{'tipo_formulario'},$tipoDatos[$body->{'tipo_formulario'}]);
+            
+            $validacion = validarDatosFormulario($body->{'valores_insertar'},$body->{'tipo_formulario'},$tipoDatos[$body->{'tipo_formulario'}]);
 
 
             if ($validacion !== 'OK') {
