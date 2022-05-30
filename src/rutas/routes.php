@@ -186,24 +186,107 @@ $app->group('/api/user/', function () use ($app) {
 //||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
 
+
+$app->get('/api/reportes/paginador[/{params:.*}]', function (Request $request, Response $response, $args) {
+    /*
+VALORES NECESARIOS 
+0 - ID_ESTADO
+1 - TIPO DE TABLA A VISUALIZAR
+2 - PAGINA
+
+*/
+
+$TablaConsultar = [
+    'produccion',//0 
+    'rehabilitacion_pozo',//1 
+    'fugas',//2 
+    'tomas_ilegales',//3 
+    'reparaciones_brippas',//4
+    'afectaciones',//5 
+    'operatividad_abastecimiento',//6
+    'pozo',//7
+    'brippas',//8
+    'sistemas'//9
+];
+
+if (!empty($args['params'])) {
+    $params = EliminarBarrasURL($args['params']);
+    
+}
+   $valorSQL = null;
+
+   if (isset($params[0]) AND isset($params[1])) {
+       if ($params[0] > 0 AND $params[0] < 25) {
+        $sql1 = "SELECT COUNT(*) as Paginas
+        FROM reporte 
+        LEFT JOIN `tablas` ON `reporte`.`id_tabla` = `tablas`.`id` 
+        LEFT JOIN `estados` ON `reporte`.`id_estado` = `estados`.`id_estado` 
+        WHERE reporte.id_estado = $params[0] AND reporte.id_tabla = $params[1]";
+       }else {
+           return "EL ESTADO SOLICITADO NO EXISTE";
+       }
+   
+}else {
+    $sql1 = "SELECT COUNT(*) as Paginas
+    FROM reporte 
+    LEFT JOIN `tablas` ON `reporte`.`id_tabla` = `tablas`.`id` 
+    LEFT JOIN `estados` ON `reporte`.`id_estado` = `estados`.`id_estado` ";
+}
+
+  
+
+   $db = new DB();
+   $datos = $db->consultaAll('mapa',$sql1);
+
+   
+    $pagina = isset($params[2]) ?(int)$params[2] : 1;
+
+
+    $regPagina = 2;
+    $inicio = ($pagina > 1) ? (($pagina * $regPagina) - $regPagina) : 0 ;
+
+
+    if (isset($params[0]) AND isset($params[1])){
+        $sql2 = "SELECT SQL_CALC_FOUND_ROWS  reporte.* , estados.estado, tablas.tipo_reporte 
+        FROM reporte 
+        LEFT JOIN `tablas` ON `reporte`.`id_tabla` = `tablas`.`id` 
+        LEFT JOIN `estados` ON `reporte`.`id_estado` = `estados`.`id_estado` 
+        WHERE reporte.id_estado =  $params[0] AND reporte.id_tabla = $params[1]
+    LIMIT $inicio , $regPagina";
+
+    }else {
+        $sql2 = "SELECT SQL_CALC_FOUND_ROWS  reporte.* , estados.estado, tablas.tipo_reporte 
+        FROM reporte 
+        LEFT JOIN `tablas` ON `reporte`.`id_tabla` = `tablas`.`id` 
+        LEFT JOIN `estados` ON `reporte`.`id_estado` = `estados`.`id_estado` 
+    LIMIT $inicio , $regPagina";
+    }
+    
+        $resultado = $db->consultaAll('mapa',$sql2);
+ 
+ return   json_encode($resultado);
+
+  
+   
+});
+
+
+         
+
+
 //||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 //||||||||||||||||||||||||||||||||||PAGINADOR|||||||||||||||||||||||||||||||||||||||||
 //||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
-
-$app->get('/api/reportes/all[/{params:.*}]', function (Request $request, Response $response, $args) {
-
+$app->get('reportes[/{params:.*}]', function (Request $request, Response $response, $args) {
+$valorSQL = null;
     /*
         ruta para obtener los reportes de el sistema
         1) existen tres parametros opcionales en la ruta, params[1] es el numero de paginacion, params[2] es el tipo de busqueda que vas a hacer si es el caso, params[3] es el id que se utiliza para formular la busqueda
         
     */
 
-    $idEstado=$request->getAttribute('jwt')["data"]->user_estado;
-    $scope=$request->getAttribute('jwt')["data"]->scope[0];
-    $id=$request->getAttribute('jwt')["data"]->user_id;
-    
-    
+    $idHidrologica=$request->getAttribute('jwt')["data"]->user_hidrologica;
     /*
     Obteniendo user_hidrologica del usuario para el primer render de la paginacion, se obtiene por el Token
     1) se optiene el token para asi poder verificar o dar la informacion en base a lo que presenta el usuario en su informacion personal
@@ -217,152 +300,105 @@ $app->get('/api/reportes/all[/{params:.*}]', function (Request $request, Respons
         $params = EliminarBarrasURL($args['params']);
         
         $tipoConsulta = null;
-        if (count($params)>2) {
-            $params[2] = trim(rawurldecode($params[2]), ' ');
+        if (count($params)>3) {
+            $params[4] = trim(rawurldecode($params[4]), ' ');
             //comprobamos que en el params[1] venga el valor de busqueda
-            if ($params[1] === "busqueda") {
+            if ($params[3] === "busqueda") {
                 $array = [];
-                
+                if ($params[4][0]==="#") {
+                    //si es un id, que se identifica por tener como primer valor el #, entonces extraemos los parametros para la consulta mysql, se le pasa como segundo valor a la funcion, el tipo, que en este caso es id
+                    $tipoConsulta = ExtraerConsultaParametro($params[3], 'id');         
+                        $paramsSaneado = explode('-', $params[4]);
+                        $params[4] = [$paramsSaneado[1]];
+                }else {
                     // en caso contrario se pasa nada mas el primer parametro, y se crea un array con los valores duplicados para enviarlos a la consulta
-                    $tipoConsulta = ExtraerConsultaParametro($params[1]);
+                    $tipoConsulta = ExtraerConsultaParametro($params[3]);
                     for ($i=0; $i < count($tipoConsulta); $i++) {
-                        $param = urldecode($params[2]);
-                        $param = '%'.$params[2].'%';               
+                        $param = urldecode($params[4]);
+                        $param = '%'.$params[4].'%';               
                         array_push($array, $param);
                     }
-                    $params[2]=$array;
+                    $params[4]=$array;
                     
-                
+                }
             }else {
-                $tipoConsulta = ExtraerConsultaParametro($params[1]);
-                $params[2]=[ucfirst($params[2])];
+                $tipoConsulta = ExtraerConsultaParametro($params[3]);
+                $params[3]=[ucfirst($params[4])];
                 
             }
-                
         }
         if ($tipoConsulta !== null) {
-            $where = CondicionalMYSQL($idEstado, $tipoConsulta, $params[2], $scope);
+            $where = CondicionalMYSQL($idHidrologica, $tipoConsulta, $params[4]);
         }else {
-            $where = CondicionalMYSQL($idEstado, null, null, $scope);
+            $where = CondicionalMYSQL($idHidrologica);
         }
 
-        $sql = "SELECT COUNT(mta.id_mta) as Paginas
-                FROM `mta` 
-                LEFT JOIN `datos_geograficos` ON `mta`.`id_datos_geograficos` = `datos_geograficos`.`id_datos_geograficos` 
-                LEFT JOIN `datos_mta` ON `mta`.`id_datos_mta` = `datos_mta`.`id_datos_mta` 
-                LEFT JOIN `municipios` ON `datos_geograficos`.`id_municipio` = `municipios`.`id_municipio` 
-                LEFT JOIN `estados` ON `datos_geograficos`.`id_estado` = `estados`.`id_estado` 
-                LEFT JOIN `parroquias` ON `datos_geograficos`.`id_parroquia` = `parroquias`.`id_parroquia`  
-                LEFT JOIN `estatus` ON `mta`.`id_estatus` = `estatus`.`id_estatus`
-                {$where}";
-    
         
+
+        $sql = "SELECT COUNT(*) as Paginas
+                FROM $valorSQL
+                LEFT JOIN reporte ON $valorSQL.id_reporte = reporte.id_reporte
+                WHERE $valorSQL.id_orientacion_proyecto = ? AND $valorSQL.id_validacion = ?
+                {$where}";
+
+
+        
+               
+
         if ($where !== "") {
             if ($tipoConsulta!==null) {
-                if ($idEstado===25) {
-                    $db = new DB();
-                    $datos = array($db->consultaAll('mapa', $sql, $params[2])[0]['Paginas'],$params[0]);
+                if ($idHidrologica===20) {
+                    $db = new DB(); 
+                    $datos = array($db->consultaAll('mapa', $sql, [$params[0], $params[1] , ...$params[4]])[0]['Paginas'],$params[2]);
                     
-                    
-                }else if($idEstado !== 25 && userVerification($scope) === false){
-                    $db = new DB();
-                    $param= [$id, ...$params[2]];
-                    $datos = array($db->consultaAll('mapa', $sql, $param)[0]['Paginas'], $params[0]);
                     
                 }else{
                     $db = new DB();
-                    $param= [$idEstado, ...$params[2]];
-                    $datos = array($db->consultaAll('mapa', $sql, $param)[0]['Paginas'], $params[0]);
+                    $param= [$params[0],$params[1], $idHidrologica, ...$params[4]];
+                    $datos = array($db->consultaAll('mapa', $sql,  $param)[0]['Paginas'], $params[2]);
                     
                 }
-                
-            }else if(userVerification($scope) === false) {
+            }else {
                 $db = new DB();
-            
-                $datos = array($db->consultaAll('mapa', $sql, [$id])[0]['Paginas'],$params[0]);
+                $datos = array($db->consultaAll('mapa', $sql, [$params[0], $params[1] , $idHidrologica])[0]['Paginas'],$params[2]);
                 
-            } else{
-                $db = New DB();
-                $datos = array($db->consultaAll('mapa', $sql, [$idEstado])[0]['Paginas'],$params[0]); 
             }
         }else {
             $db = new DB();
-            $datos = array($db->consultaAll('mapa',$sql)[0]['Paginas'], $params[0]);
+            $datos = array($db->consultaAll('mapa',$sql,[$params[0], $params[1]])[0]['Paginas'], $params[2]);
+            
             
         }
-        
-        if ($params[0] < 1 || $params[0] > ceil($datos[0] / 20)){
+
+        if ($params[2] < 1 || $params[2] > ceil($datos[0] / 20)){
             return "La pagina solicitada no existe";
         }else{
-            $paginador = New paginadorMesa($tipoConsulta!==null?$params[2]:null, $idEstado, $tipoConsulta);
-            return json_encode($paginador->paginadorMesa($datos, $scope, $id));             
+            $paginador = New paginadorIncidencia($tipoConsulta!==null?$params[4]:null, $idHidrologica, $tipoConsulta);
+             return json_encode($paginador->paginadorIncidencias($datos, $params[0]));             
         }
     }else {
-
-        $where = CondicionalMYSQL($idEstado, null, null, $scope);
-        $sql = "SELECT mta.id_mta, estatus.estatus, datos_mta.*,
-        datos_geograficos.*, estados.estado, municipios.municipio, 
-        parroquias.parroquia, sector.sector, datos_servicio.*, 
-        respuesta.respuesta, frecuencia_servicio.frecuencia_servicio, tipo_registro.tipo_registro,
-        duracion_servicio.duracion_servicio
-        FROM mta
-            LEFT JOIN estatus ON mta.id_estatus = estatus.id_estatus 
-            LEFT JOIN datos_mta ON mta.id_datos_mta = datos_mta.id_datos_mta 
-            LEFT JOIN datos_geograficos ON mta.id_datos_geograficos = datos_geograficos.id_datos_geograficos 
-            LEFT JOIN estados ON datos_geograficos.id_estado = estados.id_estado 
-            LEFT JOIN municipios ON datos_geograficos.id_municipio = municipios.id_municipio 
-            LEFT JOIN `tipo_registro` ON `mta`.`tipo_registro` = `tipo_registro`.`id_tipo_registro`
-            LEFT JOIN parroquias ON datos_geograficos.id_parroquia = parroquias.id_parroquia 
-            LEFT JOIN sector ON datos_geograficos.id_sector = sector.id_sector 
-            LEFT JOIN datos_servicio ON mta.id_datos_servicio = datos_servicio.id_datos_servicio 
-            LEFT JOIN respuesta ON datos_servicio.agua_potable = respuesta.id_respuesta 
-            LEFT JOIN frecuencia_servicio ON datos_servicio.id_frecuencia_servicio = frecuencia_servicio.id_frecuencia_servicio 
-            LEFT JOIN duracion_servicio ON datos_servicio.id_duracion_servicio = duracion_servicio.id_duracion_servicio {$where}";
-
-        if ($where !== "") {
-            if(userVerification($scope) === false) {
-                $db = new DB();
-                $datos = $db->consultaAll('mapa', $sql, [$id]);
-            } else{
-                $db = New DB();
-                $datos = $db->consultaAll('mapa', $sql, [$idEstado]);                
-            }
-        }else {
+        $sql = "SELECT COUNT(*) as Paginas
+        FROM reporte
+        LEFT JOIN reporte ON reporte.id_tabla = tablas.id
+        WHERE id_tabla = $valorSQL
+        ";
+         try {
             $db = new DB();
-            $datos = $db->consultaAll('mapa',$sql);
-            
+            $resultado = $db->consultaAll('mapa',$sql);  
+            return $response->withJson($resultado);                  
+         } 
+        catch (MySQLDuplicateKeyException $e) {
+            $e->getMessage();
         }
-
-        $sql2 = "SELECT COUNT(consejo_comunal.id_consejo_comunal) AS Consejos, SUM(consejo_comunal.poblacion) AS Poblacion
-        FROM `mta` 
-            LEFT JOIN `datos_mta` ON `mta`.`id_datos_mta` = `datos_mta`.`id_datos_mta` 
-            LEFT JOIN `consejo_comunal` ON `consejo_comunal`.`id_datos_mta` = `datos_mta`.`id_datos_mta`  
-            WHERE mta.id_mta = ?";
-
-        $sql3 = "SELECT COUNT(voceros.id_voceros) AS Voceros
-        FROM `mta`
-        LEFT JOIN `datos_mta` ON `mta`.`id_datos_mta` = `datos_mta`.`id_datos_mta` 
-        LEFT JOIN `voceros` ON `voceros`.`id_datos_mta` = `datos_mta`.`id_datos_mta` 
-        WHERE mta.id_mta = ?";
-
-            
-        
-        for ($i=0; $i < count($datos); $i++) { 
-            $ar = $db->consultaAll('mapa',$sql2, [$datos[$i]['id_mta']]);
-            $er = $db->consultaAll('mapa',$sql3, [$datos[$i]['id_mta']]);
-            $datos[$i]['poblacion']= $ar[0]['Poblacion'];
-            $datos[$i]['consejos']= $ar[0]['Consejos'];
-            $datos[$i]['voceros']= $er[0]['Voceros'];
-            
+        catch (MySQLException $e) {
+            $e->getMessage();
         }
-
-        
-        return json_encode($datos);      
+        catch (Exception $e) {
+            $e->getMessage();
+        }
     }
         
 });
-
-
 
 //////////////////////////////// DESPLEGABLES ///////////////////////////////////////////
 
@@ -440,10 +476,12 @@ $app->get('/api/desplegables/estados[/{id}]', function (Request $request, Respon
     $app->get('/api/desplegables/brippas/{id_estado}', function (Request $request, Response $response) {
         $id = $request->getAttribute('id_estado');
                 
-        $sql = "SELECT `brippas`.*, `estados`.`estado`
-        FROM `brippas` 
-            LEFT JOIN `estados` ON `brippas`.`id_estado` = `estados`.`id_estado`
-            WHERE estados.id_estado = ?";
+        $sql = "SELECT `brippas`.*, `estados`.`estado`,municipios.municipio, `parroquias`.`parroquia`
+                FROM `brippas` 
+                    LEFT JOIN `estados` ON `brippas`.`id_estado` = `estados`.`id_estado`
+                    LEFT JOIN `municipios` ON brippas.id_municipio = `municipios`.`id_municipio`
+                    LEFT JOIN parroquias ON brippas.id_parroquia = `parroquias`.`id_parroquia`
+                    WHERE `estados`.`id_estado` = ?";
                     $db = New DB();
         
              return json_encode($db->consultaAll('mapa',$sql,[$id]));
@@ -462,6 +500,68 @@ $app->get('/api/desplegables/estados[/{id}]', function (Request $request, Respon
                 
     });
 
+
+
+    $app->get('/api/reportes/dia', function (Request $request, Response $response) {
+
+        $TablaConsultar = [
+            'produccion',//0 
+            'rehabilitacion_pozo',//1 
+            'fugas',//2 
+            'tomas_ilegales',//3 
+            'reparaciones_brippas',//4
+            'afectaciones',//5 
+            'operatividad_abastecimiento',//6
+            'pozo',//7
+            'brippas',//8
+            'sistemas'//9
+        ];
+
+
+        $db = New DB();
+        $sql = "SELECT reporte.* FROM `reporte` WHERE TO_DAYS(reporte.fecha) = TO_DAYS(NOW())";
+        $resultado= $db->consultaAll('mapa',$sql);
+
+        $array=[
+            ["AMAZONAS"],
+            ["ANZOATEGUI"],
+            ["APURE"],
+            ["ARAGUA"],
+            ["BARINAS"],
+            ["BOLIVAR"],
+            ["CARABOBO"],
+            ["COJEDES"],
+            ["DELTA AMACURO"],
+            ["FALCON"],
+            ["GUARICO"],
+            ["LARA"],
+            ["MERIDA"],
+            ["MIRANDA"],
+            ["MONAGAS"],
+            ["NUEVA ESPARTA"],
+            ["PORTUGUESA"],
+            ["SUCRE"],
+            ["TACHIRA"],
+            ["TRUJILLO"],
+            ["VARGAS"], 
+            ["YARACUY"],
+            ["ZULIA"],
+            ["DISTRITO CAPITAL"]
+        ];
+
+
+        for ($i=0; $i < count($resultado); $i++) { 
+           array_push($array[$resultado[$i]["id_estado"] - 1], $TablaConsultar[$resultado[$i]["id_tabla"] +0]);
+        }
+
+
+       return json_encode($array);
+        
+        
+            
+    });
+     
+          
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////      
 $app->get('/api/pozo/{id_pozo}', function (Request $request, Response $response) {
@@ -936,7 +1036,7 @@ $app->post('/api/formularios/reportes', function (Request $request, Response $re
     ['`id_estado`', '`porcentaje_operatividad`', '`porcentaje_abastecimiento`', '`observacion`', '`id_reporte`'],
     ['`nombre`', '`operatividad`', '`lps`', '`id_estado`', '`id_municipio`', '`id_parroquia`', '`sector`', '`poblacion`'],
     ['`nombre`', '`id_estado`', '`id_municipio`', '`id_parroquia`', '`sector`', '`cantidad_integrantes`', '`dotacion`', '`formacion`'],
-    ['`nombre`', '`cantidad_pp`', '`cantidad_eb`', '`cantidad_pozo`']
+    ['`nombre`', '`cantidad_pp`', '`cantidad_eb`', '`cantidad_pozo`', '`id_estado`']
 
     ];
 
@@ -950,9 +1050,8 @@ $app->post('/api/formularios/reportes', function (Request $request, Response $re
         ["integer", "integer", "integer", "string"],                                            //operatividad_abastecimiento
         ["string", "integer", "integer", "integer", "integer", "integer", "string", "integer"], //pozo
         ["string", "integer", "integer", "integer", "string", "integer", "integer", "integer"], //brippas
-        ["string", "integer", "integer", "integer"]                                             //sistemas
+        ["string", "integer", "integer", "integer", "integer"]                                             //sistemas
     ];
-
 
     
     if (!empty($body->{'valores_insertar'})) {
@@ -975,7 +1074,8 @@ $app->post('/api/formularios/reportes', function (Request $request, Response $re
         
         
         if (($body->{'tipo_formulario'} >= 0) AND ($body->{'tipo_formulario'} <=6)) {
-            $sqlreporte = "INSERT INTO `reporte` (`id`, `ubicacion_reporte`, `fecha`, id_tabla) VALUES (NULL, ?, ?,?)";
+            $sqlreporte = "INSERT INTO `reporte` (`id`, `ubicacion_reporte`, `fecha`, id_tabla, id_estado, id_revision) VALUES (NULL, ?, ?,?,?,?)";
+
             $sqlFormulario = generarSqlRegistro($tablasInsertar[$body->{'tipo_formulario'}], $body->{'tipo_formulario'}, $TablaConsultar[$body->{'tipo_formulario'}],);
 
             $values = array_slice($body->{'valores_insertar'},2,-1);
@@ -988,7 +1088,7 @@ $app->post('/api/formularios/reportes', function (Request $request, Response $re
     
             $db = new DB();
 
-            $stmt = $db->consultaAll('mapa', $sqlreporte, [$body->{'valores_insertar'}[0], $body->{'valores_insertar'}[1],$body->{'tipo_formulario'}]);
+            $stmt = $db->consultaAll('mapa', $sqlreporte, [$body->{'valores_insertar'}[0], $body->{'valores_insertar'}[1],$body->{'tipo_formulario'}, $body->{'id_estado'},1]);
             
             if ($stmt) {
                 array_push($values,$stmt->{'insert_id'});
@@ -1125,6 +1225,38 @@ $app->put('/api/actualizacion/pozo', function (Request $request, Response $respo
             return 'POZO ACTUALIZADO';          
         }else {
             return 'HUBO UN ERROR EN LA ACTUALIZACION';
+        }
+        
+        } 
+    catch (MySQLDuplicateKeyException $e) {
+        $e->getMessage();
+    }
+    catch (MySQLException $e) {
+        $e->getMessage();
+    }
+    catch (Exception $e) {
+        $e->getMessage();
+    }
+});
+
+
+
+$app->put('/api/actualizacion/revision', function (Request $request, Response $response) { 
+    $body = json_decode($request->getBody());
+    /*
+    DATOS
+    id_revision (1 - 2)
+    id del reporte a actualizar
+
+    */
+    try {
+        $sql = "UPDATE `reporte` SET `id_revision` = ? WHERE `reporte`.`id` = ?";
+        $db = new DB();
+        $stmt = $db->consultaAll('mapa', $sql, [$body->{'id_revision'}, $body->{'id_reporte'}]);
+        if ($stmt) {
+            return 'REPORTE REVISADO';          
+        }else {
+            return 'HUBO UN ERROR EN LA LECTURA DEL REPORTE';
         }
         
         } 
