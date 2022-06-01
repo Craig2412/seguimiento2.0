@@ -526,8 +526,15 @@ $app->get('/api/desplegables/estados[/{id}]', function (Request $request, Respon
                     LEFT JOIN parroquias ON brippas.id_parroquia = `parroquias`.`id_parroquia`
                     WHERE `estados`.`id_estado` = ?";
                     $db = New DB();
+                    $resultado = $db->consultaAll('mapa',$sql,[$id]);
+                    
+        if (empty($resultado)) {
+            return "LA CONSULTA NO TIENE RESULTADOS";
+        }else {            
+            return json_encode($resultado);
+        }
         
-             return json_encode($db->consultaAll('mapa',$sql,[$id]));
+        
                     
                     
     });
@@ -537,10 +544,16 @@ $app->get('/api/desplegables/estados[/{id}]', function (Request $request, Respon
                 
         $sql = "SELECT * FROM `sistemas`";
                     $db = New DB();
-        
-             return json_encode($db->consultaAll('mapa',$sql));
 
-                
+            $resultado = $db->consultaAll('mapa',$sql);
+                    
+
+        if (empty($resultado)) {
+            return "LA CONSULTA NO TIENE RESULTADOS";
+        }else {            
+            return json_encode($resultado);
+        }
+        
     });
 
 
@@ -612,8 +625,14 @@ $app->get('/api/pozo/{id_pozo}', function (Request $request, Response $response)
 
     $sql = "SELECT * FROM pozo WHERE pozo.id = ?";
     $db = New DB();
+    $resultado = $db->consultaAll('mapa',$sql,[$id]);  
+
+    if (empty($resultado)) {
+        return "LA CONSULTA NO TIENE RESULTADOS";
+    }else {            
+        return json_encode($resultado);
+    }
     
-    return json_encode($db->consultaAll('mapa',$sql,[$id]));  
                    
 });
 
@@ -950,7 +969,7 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
 
 //////////////////////////////////////////////////////DASH/////////////////////////////////////////
 
-     
+    
     $app->get('/api/dashboard/ultimos_reportes', function (Request $request, Response $response) {
                 
         $sql = "SELECT `reporte`.*, tablas.tipo_reporte
@@ -962,83 +981,206 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
         $ultimos_reportes = $db->consultaAll('mapa',$sql);
         $values = array_slice($ultimos_reportes,-5);
 
-        return json_encode($values);         
+
+        if (empty($values)) {
+            return "LA CONSULTA NO TIENE RESULTADOS";
+        }else {            
+            return json_encode($values);
+        }
+       
     });
 
 
-    $app->get('/api/dashboard/lps_recuperados/{id_estado}', function (Request $request, Response $response) {
-        $id = $request->getAttribute('id_estado'); 
+    $app->get('/api/dashboard/lps_recuperados[/{id_estado}]', function (Request $request, Response $response) {
+
+        if ($request->getAttribute('id_estado')) {
+            $id = $request->getAttribute('id_estado');
+        }
 
 
-        $array=[
-            ["ENERO"],
-            ["FEBRERO"],
-            ["MARZO"],
-            ["ABRIL"],
-            ["MAYO"],
-            ["JUNIO"],
-            ["JULIO"],
-            ["AGOSTO"],
-            ["SEPTIEMBRE"],
-            ["OCTUBRE"],
-            ["NOVIEMBRE"],
-            ["DICIEMBRE"]
-        ];
- 
-
-        $sql = "SELECT `reporte`.`fecha`, SUM(`rehabilitacion_pozo`.`lps`), `pozo`.`id_estado`, `estados`.`estado`
-        FROM `reporte` 
+        if (isset($id)) {
+            $sql = "SELECT `reporte`.`fecha`, SUM(`rehabilitacion_pozo`.`lps`) AS total, `pozo`.`id_estado`, `estados`.`estado`
+                FROM `reporte` 
+                    LEFT JOIN `rehabilitacion_pozo` ON `rehabilitacion_pozo`.`id_reporte` = `reporte`.`id` 
+                    LEFT JOIN `pozo` ON `rehabilitacion_pozo`.`id_pozo` = `pozo`.`id` 
+                    LEFT JOIN `estados` ON `pozo`.`id_estado` = `estados`.`id_estado`
+                    WHERE pozo.id_estado = ?
+                    GROUP BY (reporte.fecha)";
+                $db = New DB();
+                $resultado = $db->consultaAll('mapa',$sql, [$id]);
+        }else {
+         $sql = "SELECT `reporte`.`fecha`, SUM(`rehabilitacion_pozo`.`lps`) AS total, `pozo`.`id_estado`, `estados`.`estado`
+            FROM `reporte` 
             LEFT JOIN `rehabilitacion_pozo` ON `rehabilitacion_pozo`.`id_reporte` = `reporte`.`id` 
             LEFT JOIN `pozo` ON `rehabilitacion_pozo`.`id_pozo` = `pozo`.`id` 
             LEFT JOIN `estados` ON `pozo`.`id_estado` = `estados`.`id_estado`
-            WHERE pozo.id_estado = ?
             GROUP BY (reporte.fecha)";
         $db = New DB();
+        $resultado = $db->consultaAll('mapa',$sql);
+        }
+        
 
-        return json_encode($db->consultaAll('mapa',$sql, [$id]));
-                
+
+        $array=[
+            ["ENERO",0],
+            ["FEBRERO",0],
+            ["MARZO",0],
+            ["ABRIL",0],
+            ["MAYO",0],
+            ["JUNIO",0],
+            ["JULIO",0],
+            ["AGOSTO",0],
+            ["SEPTIEMBRE",0],
+            ["OCTUBRE",0],
+            ["NOVIEMBRE",0],
+            ["DICIEMBRE",0]
+        ];
+ 
+
+
+       for ($i=0; $i < count($resultado) ; $i++) { 
+            $fecha = strtotime($resultado[$i]["fecha"]);
+            $mes = date("m", $fecha);
+            $array[substr($mes,-1)][1] = $array[substr($mes,-1)][1] + $resultado[$i]["total"];
+
+        }
+
+       
+
+        if (empty($array)) {
+            return "LA CONSULTA NO TIENE RESULTADOS";
+        }else {            
+            return json_encode($array);
+        }
+             
     });
 
 
 
 
-    $app->get('/api/dashboard/tomas_ilegales/{id_estado}', function (Request $request, Response $response) {
-              $id = $request->getAttribute('id_estado');
+    $app->get('/api/dashboard/tomas_ilegales[/{id_estado}]', function (Request $request, Response $response) {
 
-        $sql = "SELECT `reporte`.`fecha`, SUM(`tomas_ilegales`.`cantidad_tomas_eliminadas`), `estados`.`estado`
-        FROM `reporte` 
-            LEFT JOIN `tomas_ilegales` ON `tomas_ilegales`.`id_reporte` = `reporte`.`id` 
-            LEFT JOIN `estados` ON `tomas_ilegales`.`id_estado` = `estados`.`id_estado`
-            WHERE tomas_ilegales.id_estado = ?
-            GROUP BY (reporte.fecha)";
-        $db = New DB();
+            if ($request->getAttribute('id_estado')) {
+                $id = $request->getAttribute('id_estado');
+            }
+    
+    
+            if (isset($id)) {
+                $sql = "SELECT `reporte`.`fecha`, SUM(`tomas_ilegales`.`cantidad_tomas_eliminadas`)AS total, `estados`.`estado`
+                FROM `reporte` 
+                    LEFT JOIN `tomas_ilegales` ON `tomas_ilegales`.`id_reporte` = `reporte`.`id` 
+                    LEFT JOIN `estados` ON `tomas_ilegales`.`id_estado` = `estados`.`id_estado`
+                    WHERE tomas_ilegales.id_estado = ?
+                    GROUP BY (reporte.fecha)";
+                    $db = New DB();
+                    $resultado = $db->consultaAll('mapa',$sql, [$id]);
+            }else {
+                $sql = "SELECT `reporte`.`fecha`, SUM(`tomas_ilegales`.`cantidad_tomas_eliminadas`)AS total, `estados`.`estado`
+                FROM `reporte` 
+                    LEFT JOIN `tomas_ilegales` ON `tomas_ilegales`.`id_reporte` = `reporte`.`id` 
+                    LEFT JOIN `estados` ON `tomas_ilegales`.`id_estado` = `estados`.`id_estado`
+                    GROUP BY (reporte.fecha)";
+                     $db = New DB();
+                     $resultado = $db->consultaAll('mapa',$sql);
+            }
+            
+              $array=[
+                ["ENERO",0],
+                ["FEBRERO",0],
+                ["MARZO",0],
+                ["ABRIL",0],
+                ["MAYO",0],
+                ["JUNIO",0],
+                ["JULIO",0],
+                ["AGOSTO",0],
+                ["SEPTIEMBRE",0],
+                ["OCTUBRE",0],
+                ["NOVIEMBRE",0],
+                ["DICIEMBRE",0]
+            ];
 
-             return json_encode($db->consultaAll('mapa',$sql, [$id]));
 
-            });
+            
+       for ($i=0; $i < count($resultado) ; $i++) { 
+        $fecha = strtotime($resultado[$i]["fecha"]);
+        $mes = date("m", $fecha);
+        $array[substr($mes,-1)][1] = $array[substr($mes,-1)][1] + $resultado[$i]["total"];
+
+    }
+
+     
+
+    if (empty($array)) {
+        return "LA CONSULTA NO TIENE RESULTADOS";
+    }else {            
+        return json_encode($array);
+    }
+});
      
 
 
 
-    $app->get('/api/dashboard/fugas/{id_estado}', function (Request $request, Response $response) {
-              $id = $request->getAttribute('id_estado'); 
+    $app->get('/api/dashboard/fugas[/{id_estado}]', function (Request $request, Response $response) {
 
-        $sql = "SELECT `reporte`.`fecha`, SUM(`fugas`.`cantidad_fugas_reparadas`), `estados`.`estado`
+        if ($request->getAttribute('id_estado')) {
+            $id = $request->getAttribute('id_estado');
+        }
+
+        if (isset($id)) {
+            $sql = "SELECT `reporte`.`fecha`, SUM(`fugas`.`cantidad_fugas_reparadas`)AS total, `estados`.`estado`
             FROM `reporte` 
             LEFT JOIN `fugas` ON `fugas`.`id_reporte` = `reporte`.`id` 
             LEFT JOIN `estados` ON `fugas`.`id_estado` = `estados`.`id_estado`
             WHERE fugas.id_estado = ?
             GROUP BY (reporte.fecha)";
-        $db = New DB();
+                $db = New DB();
+                $resultado = $db->consultaAll('mapa',$sql, [$id]);
+        }else {
+            $sql = "SELECT `reporte`.`fecha`, SUM(`fugas`.`cantidad_fugas_reparadas`) AS total, `estados`.`estado`
+            FROM `reporte` 
+            LEFT JOIN `fugas` ON `fugas`.`id_reporte` = `reporte`.`id` 
+            LEFT JOIN `estados` ON `fugas`.`id_estado` = `estados`.`id_estado`
+            GROUP BY (reporte.fecha)";
+                 $db = New DB();
+                 $resultado = $db->consultaAll('mapa',$sql);
 
-             return json_encode($db->consultaAll('mapa',$sql, [$id]));
+        }
+        
+          $array=[
+            ["ENERO",0],
+            ["FEBRERO",0],
+            ["MARZO",0],
+            ["ABRIL",0],
+            ["MAYO",0],
+            ["JUNIO",0],
+            ["JULIO",0],
+            ["AGOSTO",0],
+            ["SEPTIEMBRE",0],
+            ["OCTUBRE",0],
+            ["NOVIEMBRE",0],
+            ["DICIEMBRE",0]
+        ];
 
-                
+
+        for ($i=0; $i < count($resultado) ; $i++) { 
+            $fecha = strtotime($resultado[$i]["fecha"]);
+            $mes = date("m", $fecha);
+            $array[substr($mes,-1)][1] = $array[substr($mes,-1)][1] + $resultado[$i]["total"];
+    
+        }  
+ 
+
+        if (empty($array)) {
+            return "LA CONSULTA NO TIENE RESULTADOS";
+        }else {            
+            return json_encode($array);
+        }
+
     });
 
 
 
-    $app->get('/api/dashboard/pozos_operativos/{id_estado}', function (Request $request, Response $response) {
+    $app->get('/api/dashboard/pozos_operativos[/{id_estado}]', function (Request $request, Response $response) {
               $id = $request->getAttribute('id_estado'); 
 
         $sql = "SELECT COUNT(`pozo`.`id`) as total,pozo.operatividad, `estados`.`estado`
@@ -1081,8 +1223,8 @@ $app->post('/api/formularios/reportes', function (Request $request, Response $re
     $tablasInsertar=[
     ['`metros_cubicos`', '`id_estado`', '`id_reporte`'],
     ['`lps`', '`id_pozo`', '`id_reporte`'],
-    ['`nombre_aduccion`', '`id_estado`', '`id_municipio`', '`id_parroquia`', '`sector`' , '`cantidad_fugas_reparadas`','`id_reporte`'],
-    ['`nombre_aduccion`', '`id_estado`', '`id_municipio`', '`id_parroquia`', '`sector`' , '`cantidad_tomas_eliminadas`', '`lps`', '`id_reporte`'],
+    ['`nombre_aduccion`', '`id_estado`', '`id_municipio`', '`id_parroquia`', '`sector`' , '`cantidad_fugas_reparadas`','`id_reporte`', '`lps_recuperados`'],
+    ['`nombre_aduccion`', '`id_estado`', '`id_municipio`', '`id_parroquia`', '`sector`' , '`cantidad_tomas_eliminadas`', '`lps`', '`id_reporte`', '`lps_recuperados`'],
     ['`averias_levantadas_ap`', '`averias_levantadas_ap`', '`averias_levantadas_as`', '`averias_corregidas_as`', '`id_brippas`' , '`id_reporte`'],
     ['`id_estado`', '`cantidad`', '`horas_sin_servicio`', '`equipos_danados`', '`id_infraestructura`' , '`id_sistema`', '`id_reporte`'],
     ['`id_estado`', '`porcentaje_operatividad`', '`porcentaje_abastecimiento`', '`observacion`', '`id_reporte`'],
@@ -1095,8 +1237,8 @@ $app->post('/api/formularios/reportes', function (Request $request, Response $re
     $tipoDatos = [//Tipo de datos a ingresar en cada formulario
         ["integer", "integer"],                                                                 //produccion
         ["integer", "integer"],                                                                 //rehabilitacion_pozo
-        ["string", "integer", "integer", "integer", "string" , "integer"],                      //fugas
-        ["string", "integer", "integer", "integer", "string" , "integer", "integer"],           //tomas_ilegales
+        ["string", "integer", "integer", "integer", "string" , "integer", "integer"],           //fugas
+        ["string", "integer", "integer", "integer", "string" , "integer", "integer", "integer"],//tomas_ilegales
         ["integer", "integer", "integer", "integer", "integer"],                                //reparaciones_brippas
         ["integer", "integer", "integer", "integer", "integer" , "integer"],                    //afectaciones
         ["integer", "integer", "integer", "string"],                                            //operatividad_abastecimiento
