@@ -481,16 +481,36 @@ $app->get('/api/desplegables/estados[/{id}]', function (Request $request, Respon
 
 
 
-    $app->get('/api/desplegables/pozos/{id_estado}', function (Request $request, Response $response) {
-        $id = $request->getAttribute('id_estado');
-                
-        $sql = "SELECT `pozo`.*, `estados`.`estado`
-        FROM `pozo` 
-            LEFT JOIN `estados` ON `pozo`.`id_estado` = `estados`.`id_estado`
-            WHERE estados.id_estado = ?";
-                    $db = New DB();
+    $app->get('/api/desplegables/pozos[/{id_estado}]', function (Request $request, Response $response) {
         
-             return json_encode($db->consultaAll('mapa',$sql,[$id]));
+        if ($request->getAttribute('id_estado')) {
+           
+            $id = $request->getAttribute('id_estado');
+        }
+        
+        $db = New DB();
+
+        if ($id) {
+            $sql = "SELECT `pozo`.*, `estados`.`estado`
+                    FROM `pozo` 
+                    LEFT JOIN `estados` ON `pozo`.`id_estado` = `estados`.`id_estado`
+            WHERE estados.id_estado = ?";
+            $resultado = $db->consultaAll('mapa',$sql,[$id]);
+        }else {
+            $sql = "SELECT `pozo`.*, `estados`.`estado`
+                    FROM `pozo` 
+                    LEFT JOIN `estados` ON `pozo`.`id_estado` = `estados`.`id_estado`";
+                $resultado = $db->consultaAll('mapa',$sql);
+
+        }
+
+
+        if (empty($resultado)) {
+            return "LA CONSULTA NO TIENE RESULTADOS";
+        }else {            
+            return json_encode($resultado);
+        }
+        
                     
                     
     });
@@ -947,7 +967,24 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
 
 
     $app->get('/api/dashboard/lps_recuperados/{id_estado}', function (Request $request, Response $response) {
-        $id = $request->getAttribute('id_estado');  
+        $id = $request->getAttribute('id_estado'); 
+
+
+        $array=[
+            ["ENERO"],
+            ["FEBRERO"],
+            ["MARZO"],
+            ["ABRIL"],
+            ["MAYO"],
+            ["JUNIO"],
+            ["JULIO"],
+            ["AGOSTO"],
+            ["SEPTIEMBRE"],
+            ["OCTUBRE"],
+            ["NOVIEMBRE"],
+            ["DICIEMBRE"]
+        ];
+ 
 
         $sql = "SELECT `reporte`.`fecha`, SUM(`rehabilitacion_pozo`.`lps`), `pozo`.`id_estado`, `estados`.`estado`
         FROM `reporte` 
