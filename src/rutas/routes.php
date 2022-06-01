@@ -490,7 +490,7 @@ $app->get('/api/desplegables/estados[/{id}]', function (Request $request, Respon
         
         $db = New DB();
 
-        if ($id) {
+        if (isset($id)) {
             $sql = "SELECT `pozo`.*, `estados`.`estado`
                     FROM `pozo` 
                     LEFT JOIN `estados` ON `pozo`.`id_estado` = `estados`.`id_estado`
