@@ -209,6 +209,8 @@ $TablaConsultar = [
     'sistemas'//9
 ];
 
+$db = new DB();
+
 if (!empty($args['params'])) {
     $params = EliminarBarrasURL($args['params']);
     
@@ -216,14 +218,23 @@ if (!empty($args['params'])) {
    $valorSQL = null;
 
    if (isset($params[0]) AND isset($params[1])) {
-       if ($params[0] > 0 AND $params[0] < 25) {
-        $sql1 = "SELECT COUNT(*) as Paginas
-        FROM reporte 
-        LEFT JOIN `tablas` ON `reporte`.`id_tabla` = `tablas`.`id` 
-        LEFT JOIN `estados` ON `reporte`.`id_estado` = `estados`.`id_estado` 
-        WHERE reporte.id_estado = $params[0] AND reporte.id_tabla = $params[1]";
+        if ($params[0] > 0 AND $params[0] < 25) {
+            $sql1 = "SELECT COUNT(*) as Paginas
+            FROM reporte 
+            LEFT JOIN `tablas` ON `reporte`.`id_tabla` = `tablas`.`id` 
+            LEFT JOIN `estados` ON `reporte`.`id_estado` = `estados`.`id_estado` 
+            WHERE reporte.id_estado = ? AND reporte.id_tabla = ?";
+
+            $datos = $db->consultaAll('mapa',$sql1, [$params[0], $params[1]]);
+
        }else {
-           return "EL ESTADO SOLICITADO NO EXISTE";
+            $sql1 = "SELECT COUNT(*) as Paginas
+            FROM reporte 
+            LEFT JOIN `tablas` ON `reporte`.`id_tabla` = `tablas`.`id` 
+            LEFT JOIN `estados` ON `reporte`.`id_estado` = `estados`.`id_estado` 
+            WHERE reporte.id_tabla = ?";
+
+            $datos = $db->consultaAll('mapa',$sql1, [$params[1]]);
        }
    
 }else {
@@ -231,40 +242,52 @@ if (!empty($args['params'])) {
     FROM reporte 
     LEFT JOIN `tablas` ON `reporte`.`id_tabla` = `tablas`.`id` 
     LEFT JOIN `estados` ON `reporte`.`id_estado` = `estados`.`id_estado` ";
+
+    $datos = $db->consultaAll('mapa',$sql1);
 }
-
-  
-
-   $db = new DB();
-   $datos = $db->consultaAll('mapa',$sql1);
-
    
     $pagina = isset($params[2]) ?(int)$params[2] : 1;
 
 
-    $regPagina = 2;
+    $regPagina = 12;
     $inicio = ($pagina > 1) ? (($pagina * $regPagina) - $regPagina) : 0 ;
 
 
     if (isset($params[0]) AND isset($params[1])){
-        $sql2 = "SELECT SQL_CALC_FOUND_ROWS  reporte.* , estados.estado, tablas.tipo_reporte 
-        FROM reporte 
-        LEFT JOIN `tablas` ON `reporte`.`id_tabla` = `tablas`.`id` 
-        LEFT JOIN `estados` ON `reporte`.`id_estado` = `estados`.`id_estado` 
-        WHERE reporte.id_estado =  $params[0] AND reporte.id_tabla = $params[1]
-    LIMIT $inicio , $regPagina";
+
+        if ($params[0] > 0 AND $params[0] < 25) {
+            $sql2 = "SELECT SQL_CALC_FOUND_ROWS  reporte.* , estados.estado, tablas.tipo_reporte 
+            FROM reporte 
+            LEFT JOIN `tablas` ON `reporte`.`id_tabla` = `tablas`.`id` 
+            LEFT JOIN `estados` ON `reporte`.`id_estado` = `estados`.`id_estado` 
+            WHERE reporte.id_estado = ? AND reporte.id_tabla = ?
+            LIMIT $inicio , $regPagina";
+            $resultado = $db->consultaAll('mapa',$sql2, [$params[0], $params[1]]);
+        }else{
+            $sql2 = "SELECT SQL_CALC_FOUND_ROWS  reporte.* , estados.estado, tablas.tipo_reporte 
+            FROM reporte 
+            LEFT JOIN `tablas` ON `reporte`.`id_tabla` = `tablas`.`id` 
+            LEFT JOIN `estados` ON `reporte`.`id_estado` = `estados`.`id_estado` 
+            WHERE reporte.id_tabla = ?
+            LIMIT $inicio , $regPagina";
+            $resultado = $db->consultaAll('mapa',$sql2, [$params[1]]);
+        }
+        
+
 
     }else {
         $sql2 = "SELECT SQL_CALC_FOUND_ROWS  reporte.* , estados.estado, tablas.tipo_reporte 
         FROM reporte 
         LEFT JOIN `tablas` ON `reporte`.`id_tabla` = `tablas`.`id` 
         LEFT JOIN `estados` ON `reporte`.`id_estado` = `estados`.`id_estado` 
-    LIMIT $inicio , $regPagina";
-    }
-    
+        LIMIT $inicio , $regPagina";
         $resultado = $db->consultaAll('mapa',$sql2);
+    }
  
- return   json_encode($resultado);
+    return   json_encode([
+        "paginas"=>$pagina,
+        "datos"=>$resultado
+    ]);
 
   
    
@@ -640,12 +663,6 @@ $app->get('/api/reportes/unico[/{params:.*}]', function (Request $request, Respo
 
                         WHERE $valorSQL2.id = ?";
             
-            
-
-
-            
-
-
         }else {
 
             $sql = "SELECT $valorSQL.*, `estados`.`estado`,`reporte`.`fecha`
@@ -803,7 +820,7 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
     
 
     if (count($params) === 3) {
-
+        
         if ( ($params[0] === 1) || ($params[0] === 5) || ($params[0] === 4)) {
             $valorSQL = $TablaConsultar[$params[0]];
         
@@ -827,10 +844,11 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
 
             $sql = "SELECT $valorSQL.*, `reporte`.fecha , $valorSQL2.nombre, estados.estado
             FROM $valorSQL
-                LEFT JOIN reporte ON $valorSQL.id = `reporte`.`id`  
+                LEFT JOIN `reporte` ON $valorSQL.id_reporte = `reporte`.`id`   
                 LEFT JOIN $valorSQL2 ON $valorSQL.id_$valorSQL2 = $valorSQL2.id
                 LEFT JOIN estados ON $valorSQL2.id_estado = estados.id_estado
-                WHERE reporte.fecha BETWEEN ? AND ?";
+                WHERE reporte.fecha 
+                BETWEEN ? AND ?";
 
                 $reporte= $db->consultaAll('mapa',$sql, [$params[1], 
                                                          $params[2]]);
@@ -842,9 +860,10 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
 
             $sql = "SELECT $valorSQL.*, `reporte`.fecha, estados.estado
             FROM $valorSQL
-                LEFT JOIN `reporte` ON $valorSQL.id = `reporte`.`id`                 
+                LEFT JOIN `reporte` ON $valorSQL.id_reporte = `reporte`.`id`             
                 LEFT JOIN `estados` ON $valorSQL.id_estado = estados.id_estado 
-                WHERE reporte.fecha BETWEEN ? AND ?";
+                WHERE reporte.fecha 
+                BETWEEN ? AND ?";
 
                 $reporte= $db->consultaAll('mapa',$sql, [$params[1], 
                                                          $params[2]]);
@@ -877,7 +896,7 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
 
             $sql = "SELECT $valorSQL.*, `reporte`.fecha , $valorSQL2.nombre, estados.estado
             FROM $valorSQL
-                LEFT JOIN reporte ON $valorSQL.id = `reporte`.`id`  
+                LEFT JOIN `reporte` ON $valorSQL.id_reporte = `reporte`.`id`    
                 LEFT JOIN $valorSQL2 ON $valorSQL.id_$valorSQL2 = $valorSQL2.id
                 LEFT JOIN estados ON $valorSQL2.id_estado = estados.id_estado
                 WHERE $valorSQL2.id_estado = ? AND reporte.fecha BETWEEN ? AND ?";
@@ -893,7 +912,7 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
 
         $sql = "SELECT $valorSQL.*, `reporte`.fecha, estados.estado
         FROM $valorSQL
-            LEFT JOIN `reporte` ON $valorSQL.id = `reporte`.`id`                 
+            LEFT JOIN `reporte` ON $valorSQL.id_reporte = `reporte`.`id`                  
             LEFT JOIN `estados` ON $valorSQL.id_estado = estados.id_estado 
             WHERE $valorSQL.id_estado = ? AND reporte.fecha BETWEEN ? AND ?";
 
@@ -902,7 +921,6 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
                                                      $params[2]]);
             return json_encode($reporte);
         }
-        
 
     }else{
         return 'FALTAN INSERTAR PARAMETROS PARA SOLICITAR EL REPORTE';
@@ -924,14 +942,12 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
         $ultimos_reportes = $db->consultaAll('mapa',$sql);
         $values = array_slice($ultimos_reportes,-5);
 
-             return json_encode($values);
-
-                
+        return json_encode($values);         
     });
 
 
     $app->get('/api/dashboard/lps_recuperados/{id_estado}', function (Request $request, Response $response) {
-              $id = $request->getAttribute('id_estado');  
+        $id = $request->getAttribute('id_estado');  
 
         $sql = "SELECT `reporte`.`fecha`, SUM(`rehabilitacion_pozo`.`lps`), `pozo`.`id_estado`, `estados`.`estado`
         FROM `reporte` 
@@ -942,8 +958,7 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
             GROUP BY (reporte.fecha)";
         $db = New DB();
 
-             return json_encode($db->consultaAll('mapa',$sql, [$id]));
-
+        return json_encode($db->consultaAll('mapa',$sql, [$id]));
                 
     });
 
@@ -975,7 +990,7 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
             FROM `reporte` 
             LEFT JOIN `fugas` ON `fugas`.`id_reporte` = `reporte`.`id` 
             LEFT JOIN `estados` ON `fugas`.`id_estado` = `estados`.`id_estado`
-            WHERE tomas_ilegales.id_estado = ?
+            WHERE fugas.id_estado = ?
             GROUP BY (reporte.fecha)";
         $db = New DB();
 
