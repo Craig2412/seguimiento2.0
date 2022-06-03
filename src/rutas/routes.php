@@ -780,6 +780,7 @@ $app->get('/api/reportes/estado[/{params:.*}]', function (Request $request, Resp
     }
     
 
+
     if (count($params) === 2) {
         
         if (($params[0] === 1) || ($params[0] === 5) || ($params[0] === 4)) {
@@ -790,7 +791,9 @@ $app->get('/api/reportes/estado[/{params:.*}]', function (Request $request, Resp
                     break;
 
                 case 5:
+                    
                     $valorSQL2 = $TablaConsultar[9];
+                    $valorSQL3 = 'sistema';
                     break;
 
                 case 4:
@@ -801,14 +804,21 @@ $app->get('/api/reportes/estado[/{params:.*}]', function (Request $request, Resp
                 $valorSQL2 = null;
                     break;
             }
+            if ($params[0] === 5) {
+                $sql = "SELECT $valorSQL.*, `estados`.`estado`, $valorSQL2.*
+                    FROM $valorSQL 
+                        LEFT JOIN $valorSQL2 ON $valorSQL.id_$valorSQL3 = $valorSQL2.id
+                        LEFT JOIN `estados` ON $valorSQL2.id_estado = `estados`.`id_estado`
+                        WHERE $valorSQL2.id_estado = ?";
+                
+            }else {
+                
             $sql = "SELECT $valorSQL.*, `estados`.`estado`, $valorSQL2.*
                     FROM $valorSQL 
                         LEFT JOIN $valorSQL2 ON $valorSQL.id_$valorSQL2 = $valorSQL2.id
                         LEFT JOIN `estados` ON $valorSQL2.id_estado = `estados`.`id_estado`
                         WHERE $valorSQL2.id_estado = ?";
-
-
-            
+            }
 
 
         }else {
@@ -822,8 +832,14 @@ $app->get('/api/reportes/estado[/{params:.*}]', function (Request $request, Resp
         
         }
             $reporte= $db->consultaAll('mapa',$sql, [$params[1]]);
+
+            if (empty($reporte)) {
+                return "LA CONSULTA NO TIENE RESULTADOS";
+            }else {            
+                return json_encode($reporte);
+            }
+            
      
-            return json_encode($reporte);
         
     }elseif (count($params) === 3) {
 
@@ -884,6 +900,8 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
 
                 case 5:
                     $valorSQL2 = $TablaConsultar[9];
+                    $valorSQL3 = 'sistema';
+
                     break;
 
                 case 4:
@@ -895,6 +913,19 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
                     break;
             }
 
+
+
+            if ($params[0] === 5) {
+                $sql = "SELECT $valorSQL.*, `reporte`.fecha , $valorSQL2.nombre, estados.estado
+                FROM $valorSQL
+                    LEFT JOIN `reporte` ON $valorSQL.id_reporte = `reporte`.`id`   
+                    LEFT JOIN $valorSQL2 ON $valorSQL.id_$valorSQL3 = $valorSQL2.id
+                    LEFT JOIN estados ON $valorSQL2.id_estado = estados.id_estado
+                    WHERE reporte.fecha 
+                    BETWEEN ? AND ?";
+                
+            }else {
+                
             $sql = "SELECT $valorSQL.*, `reporte`.fecha , $valorSQL2.nombre, estados.estado
             FROM $valorSQL
                 LEFT JOIN `reporte` ON $valorSQL.id_reporte = `reporte`.`id`   
@@ -902,10 +933,20 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
                 LEFT JOIN estados ON $valorSQL2.id_estado = estados.id_estado
                 WHERE reporte.fecha 
                 BETWEEN ? AND ?";
+            }
+
+
+
                 $reporte= $db->consultaAll('mapa',$sql, [$params[1], 
                                                          $params[2]]);
-                return json_encode($reporte);
-                            
+
+            if (empty($reporte)) {
+                        return "LA CONSULTA NO TIENE RESULTADOS";
+                    }else {            
+                        return json_encode($reporte);
+                    }
+        
+
         }else {
 
             $valorSQL = $TablaConsultar[$params[0]];
@@ -946,17 +987,37 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
                     break;
             }
 
-            $sql = "SELECT $valorSQL.*, `reporte`.fecha , $valorSQL2.nombre, estados.estado
+            if ($params[0] === 5) {
+                $sql = "SELECT $valorSQL.*, `reporte`.fecha , $valorSQL2.nombre, estados.estado
             FROM $valorSQL
                 LEFT JOIN `reporte` ON $valorSQL.id_reporte = `reporte`.`id`    
-                LEFT JOIN $valorSQL2 ON $valorSQL.id_$valorSQL2 = $valorSQL2.id
+                LEFT JOIN $valorSQL2 ON $valorSQL.id_$valorSQL3 = $valorSQL2.id
                 LEFT JOIN estados ON $valorSQL2.id_estado = estados.id_estado
                 WHERE $valorSQL2.id_estado = ? AND reporte.fecha BETWEEN ? AND ?";
+                
+            }else {
+                
+            $sql = "SELECT $valorSQL.*, `reporte`.fecha , $valorSQL2.nombre, estados.estado
+            FROM $valorSQL
+                LEFT JOIN `reporte` ON $valorSQL.id_reporte = `reporte`.`id`   
+                LEFT JOIN $valorSQL2 ON $valorSQL.id_$valorSQL2 = $valorSQL2.id
+                LEFT JOIN estados ON $valorSQL2.id_estado = estados.id_estado
+                WHERE reporte.fecha 
+                BETWEEN ? AND ?";
+            }
+
 
             $reporte= $db->consultaAll('mapa',$sql, [$params[3],
                                                      $params[1], 
                                                      $params[2]]);
-            return json_encode($reporte);
+
+
+            if (empty($reporte)) {
+                        return "LA CONSULTA NO TIENE RESULTADOS";
+                    }else {            
+                        return json_encode($resultado);
+                    }
+        
 
         }else{
 
@@ -1051,12 +1112,29 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
  
 
 
-       for ($i=0; $i < count($resultado) ; $i++) { 
+        for ($i=0; $i < count($resultado) ; $i++) { 
             $fecha = strtotime($resultado[$i]["fecha"]);
             $mes = date("m", $fecha);
-            $array[substr($mes,-1)][1] = $array[substr($mes,-1)][1] + $resultado[$i]["total"];
-
-        }
+            switch ($mes) {
+                case '10':
+                    break;
+                
+                case '11':
+                    
+                    break;
+                
+                case '12':
+                    
+                    break;
+                
+                default:
+                $mes = substr($mes,-1);
+                    break;
+            }
+            $array[$mes -1][1] = $array[$mes -1][1] + $resultado[$i]["total"];
+    
+        }  
+ 
 
        
 
@@ -1114,12 +1192,31 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
 
 
             
-       for ($i=0; $i < count($resultado) ; $i++) { 
-        $fecha = strtotime($resultado[$i]["fecha"]);
-        $mes = date("m", $fecha);
-        $array[substr($mes,-1)][1] = $array[substr($mes,-1)][1] + $resultado[$i]["total"];
-
-    }
+     
+            for ($i=0; $i < count($resultado) ; $i++) { 
+                $fecha = strtotime($resultado[$i]["fecha"]);
+                $mes = date("m", $fecha);
+                switch ($mes) {
+                    case '10':
+                        break;
+                    
+                    case '11':
+                        
+                        break;
+                    
+                    case '12':
+                        
+                        break;
+                    
+                    default:
+                    $mes = substr($mes,-1);
+                        break;
+                }
+                $array[$mes -1][1] = $array[$mes -1][1] + $resultado[$i]["total"];
+        
+            }  
+     
+     
 
      
 
@@ -1178,9 +1275,26 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
         for ($i=0; $i < count($resultado) ; $i++) { 
             $fecha = strtotime($resultado[$i]["fecha"]);
             $mes = date("m", $fecha);
-            $array[substr($mes,-1)][1] = $array[substr($mes,-1)][1] + $resultado[$i]["total"];
+            switch ($mes) {
+                case '10':
+                    break;
+                
+                case '11':
+                    
+                    break;
+                
+                case '12':
+                    
+                    break;
+                
+                default:
+                $mes = substr($mes,-1);
+                    break;
+            }
+            $array[$mes -1][1] = $array[$mes -1][1] + $resultado[$i]["total"];
     
         }  
+ 
  
 
         if (empty($array)) {
@@ -1206,7 +1320,51 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
             "operativos" => $db->consultaAll('mapa',$sql, [$id,1]),
             "inoperativos" => $db->consultaAll('mapa',$sql, [$id,0])
         ];
-             return json_encode($array);
+
+        if (empty($array)) {
+            return "LA CONSULTA NO TIENE RESULTADOS";
+        }else {            
+            return json_encode($array);
+        }
+        
+
+                
+    });
+
+
+
+    $app->get('/api/reporte/mapa/[/{id_estado}]', function (Request $request, Response $response) {
+              $id = $request->getAttribute('id_estado'); 
+
+            $array=[
+                ["ENERO",0],
+                ["FEBRERO",0],
+                ["MARZO",0],
+                ["ABRIL",0],
+                ["MAYO",0],
+                ["JUNIO",0],
+                ["JULIO",0],
+                ["AGOSTO",0],
+                ["SEPTIEMBRE",0],
+                ["OCTUBRE",0],
+                ["NOVIEMBRE",0],
+                ["DICIEMBRE",0]
+            ];
+    
+
+        $sql = "SELECT COUNT(`pozo`.`id`) as total,pozo.operatividad, `estados`.`estado`
+        FROM `pozo` 
+            LEFT JOIN `estados` ON `pozo`.`id_estado` = `estados`.`id_estado`
+                WHERE pozo.id_estado = ? AND pozo.operatividad = ?";
+        $db = New DB();
+
+        
+        if (empty($array)) {
+            return "LA CONSULTA NO TIENE RESULTADOS";
+        }else {            
+            return json_encode($array);
+        }
+        
 
                 
     });
