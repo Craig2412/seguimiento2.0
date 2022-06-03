@@ -516,18 +516,33 @@ $app->get('/api/desplegables/estados[/{id}]', function (Request $request, Respon
     });
 
 
-    $app->get('/api/desplegables/brippas/{id_estado}', function (Request $request, Response $response) {
-        $id = $request->getAttribute('id_estado');
-                
-        $sql = "SELECT `brippas`.*, `estados`.`estado`,municipios.municipio, `parroquias`.`parroquia`
-                FROM `brippas` 
+    $app->get('/api/desplegables/brippas[/{id_estado}]', function (Request $request, Response $response) {
+        
+        if ($request->getAttribute('id_estado')) {
+           
+            $id = $request->getAttribute('id_estado');
+        }
+        
+        $db = New DB();
+
+        if (isset($id)) {
+            $sql = "SELECT `brippas`.*, `estados`.`estado`,municipios.municipio, `parroquias`.`parroquia`
+                    FROM `brippas` 
                     LEFT JOIN `estados` ON `brippas`.`id_estado` = `estados`.`id_estado`
                     LEFT JOIN `municipios` ON brippas.id_municipio = `municipios`.`id_municipio`
                     LEFT JOIN parroquias ON brippas.id_parroquia = `parroquias`.`id_parroquia`
                     WHERE `estados`.`id_estado` = ?";
-                    $db = New DB();
-                    $resultado = $db->consultaAll('mapa',$sql,[$id]);
-                    
+            $resultado = $db->consultaAll('mapa',$sql,[$id]);
+        }else {
+            $sql = "SELECT `brippas`.*, `estados`.`estado`, `municipios`.`municipio`, `parroquias`.`parroquia`
+                    FROM `brippas` 
+                    LEFT JOIN `estados` ON `brippas`.`id_estado` = `estados`.`id_estado` 
+                    LEFT JOIN `municipios` ON `brippas`.`id_municipio` = `municipios`.`id_municipio` 
+                    LEFT JOIN `parroquias` ON `brippas`.`id_parroquia` = `parroquias`.`id_parroquia`;";
+            $resultado = $db->consultaAll('mapa',$sql);
+
+        }
+
         if (empty($resultado)) {
             return "LA CONSULTA NO TIENE RESULTADOS";
         }else {            
@@ -856,7 +871,6 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
     }else {
         return 'PARAMETROS DE BUSQUEDA NO VALIDOS';
     }
-    
 
     if (count($params) === 3) {
         
@@ -888,7 +902,6 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
                 LEFT JOIN estados ON $valorSQL2.id_estado = estados.id_estado
                 WHERE reporte.fecha 
                 BETWEEN ? AND ?";
-
                 $reporte= $db->consultaAll('mapa',$sql, [$params[1], 
                                                          $params[2]]);
                 return json_encode($reporte);
