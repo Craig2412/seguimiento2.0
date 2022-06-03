@@ -457,8 +457,10 @@ $app->get('/api/desplegables/estados[/{id}]', function (Request $request, Respon
                 LEFT JOIN estados ON municipios.id_estado = estados.id_estadO
                 WHERE municipios.id_estado = ?";
                 $db = New DB();
-            
-            return json_encode($db->consultaAll('mapa',$sql,[$id]));
+                $resultado = $db->consultaAll('mapa',$sql,[$id]);
+
+                return validarDatosReturn($resultado);
+    
         });
         
         
@@ -473,8 +475,10 @@ $app->get('/api/desplegables/estados[/{id}]', function (Request $request, Respon
                 LEFT JOIN municipios ON parroquias.id_municipio = municipios.id_municipio 
                 WHERE municipios.id_municipio = ?";
                     $db = New DB();
+                    $resultado = $db->consultaAll('mapa',$sql,[$id]);
+
+                    return validarDatosReturn($resultado);
         
-                    return json_encode($db->consultaAll('mapa',$sql,[$id]));
                     
                     
     });
@@ -505,13 +509,7 @@ $app->get('/api/desplegables/estados[/{id}]', function (Request $request, Respon
         }
 
 
-        if (empty($resultado)) {
-            return "LA CONSULTA NO TIENE RESULTADOS";
-        }else {            
-            return json_encode($resultado);
-        }
-        
-                    
+        return validarDatosReturn($resultado);       
                     
     });
 
@@ -542,13 +540,7 @@ $app->get('/api/desplegables/estados[/{id}]', function (Request $request, Respon
             $resultado = $db->consultaAll('mapa',$sql);
 
         }
-
-        if (empty($resultado)) {
-            return "LA CONSULTA NO TIENE RESULTADOS";
-        }else {            
-            return json_encode($resultado);
-        }
-        
+        return validarDatosReturn($resultado);
         
                     
                     
@@ -563,11 +555,7 @@ $app->get('/api/desplegables/estados[/{id}]', function (Request $request, Respon
             $resultado = $db->consultaAll('mapa',$sql);
                     
 
-        if (empty($resultado)) {
-            return "LA CONSULTA NO TIENE RESULTADOS";
-        }else {            
-            return json_encode($resultado);
-        }
+            return validarDatosReturn($resultado);
         
     });
 
@@ -642,12 +630,7 @@ $app->get('/api/pozo/{id_pozo}', function (Request $request, Response $response)
     $db = New DB();
     $resultado = $db->consultaAll('mapa',$sql,[$id]);  
 
-    if (empty($resultado)) {
-        return "LA CONSULTA NO TIENE RESULTADOS";
-    }else {            
-        return json_encode($resultado);
-    }
-    
+    return validarDatosReturn($resultado);
                    
 });
 
@@ -730,8 +713,7 @@ $app->get('/api/reportes/unico[/{params:.*}]', function (Request $request, Respo
         }
             $reporte= $db->consultaAll('mapa',$sql, [$params[1]]);
      
-            return json_encode($reporte);
-        
+            return validarDatosReturn($reporte);
     }elseif (count($params) === 3) {
 
         
@@ -833,12 +815,7 @@ $app->get('/api/reportes/estado[/{params:.*}]', function (Request $request, Resp
         }
             $reporte= $db->consultaAll('mapa',$sql, [$params[1]]);
 
-            if (empty($reporte)) {
-                return "LA CONSULTA NO TIENE RESULTADOS";
-            }else {            
-                return json_encode($reporte);
-            }
-            
+            return validarDatosReturn($reporte);
      
         
     }elseif (count($params) === 3) {
@@ -855,6 +832,7 @@ $app->get('/api/reportes/estado[/{params:.*}]', function (Request $request, Resp
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Response $response, $args) {
+    $array = [];
     $params = EliminarBarrasURL($args['params']);
     /*params = 
     0 - Tipo de formulario
@@ -1032,11 +1010,12 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
             $reporte= $db->consultaAll('mapa',$sql, [$params[3],
                                                      $params[1], 
                                                      $params[2]]);
-            return json_encode($reporte);
+            
+            return validarDatosReturn($reporte);                                         return json_encode($reporte);
         }
 
     }else{
-        return 'FALTAN INSERTAR PARAMETROS PARA SOLICITAR EL REPORTE';
+        return validarDatosReturn($array);;
 }     
 });
 ////////////////////////////////////////////////////FIN/////////////////////////////////////////////////////// 
@@ -1055,13 +1034,7 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
         $ultimos_reportes = $db->consultaAll('mapa',$sql);
         $values = array_slice($ultimos_reportes,-5);
 
-
-        if (empty($values)) {
-            return "LA CONSULTA NO TIENE RESULTADOS";
-        }else {            
-            return json_encode($values);
-        }
-       
+        return validarDatosReturn($values);
     });
 
 
@@ -1134,16 +1107,7 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
             $array[$mes -1][1] = $array[$mes -1][1] + $resultado[$i]["total"];
     
         }  
- 
-
-       
-
-        if (empty($array)) {
-            return "LA CONSULTA NO TIENE RESULTADOS";
-        }else {            
-            return json_encode($array);
-        }
-             
+        return validarDatosReturn($array);   
     });
 
 
@@ -1215,16 +1179,7 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
                 $array[$mes -1][1] = $array[$mes -1][1] + $resultado[$i]["total"];
         
             }  
-     
-     
-
-     
-
-    if (empty($array)) {
-        return "LA CONSULTA NO TIENE RESULTADOS";
-    }else {            
-        return json_encode($array);
-    }
+            return validarDatosReturn($array);
 });
      
 
@@ -1294,15 +1249,7 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
             $array[$mes -1][1] = $array[$mes -1][1] + $resultado[$i]["total"];
     
         }  
- 
- 
-
-        if (empty($array)) {
-            return "LA CONSULTA NO TIENE RESULTADOS";
-        }else {            
-            return json_encode($array);
-        }
-
+        return validarDatosReturn($array);
     });
 
 
@@ -1321,53 +1268,166 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
             "inoperativos" => $db->consultaAll('mapa',$sql, [$id,0])
         ];
 
-        if (empty($array)) {
-            return "LA CONSULTA NO TIENE RESULTADOS";
-        }else {            
-            return json_encode($array);
-        }
+        return validarDatosReturn($array);                 
+
         
 
                 
     });
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-    $app->get('/api/reporte/mapa/[/{id_estado}]', function (Request $request, Response $response) {
-              $id = $request->getAttribute('id_estado'); 
+    $app->get('/api/reporte/mapa[/{params:.*}]', function (Request $request, Response $response, $args){
+     //ENVIAR OBLIGATORIAMENTE 
+     //FECHA INICIAL  
+     //FECHA FINAL 
+     //EL TIPO DE CONSULTA => 'pozos_rehabilitados'
 
-            $array=[
-                ["ENERO",0],
-                ["FEBRERO",0],
-                ["MARZO",0],
-                ["ABRIL",0],
-                ["MAYO",0],
-                ["JUNIO",0],
-                ["JULIO",0],
-                ["AGOSTO",0],
-                ["SEPTIEMBRE",0],
-                ["OCTUBRE",0],
-                ["NOVIEMBRE",0],
-                ["DICIEMBRE",0]
-            ];
+     $array=[
+        ["AMAZONAS",0],
+        ["ANZOATEGUI",0],
+        ["APURE",0],
+        ["ARAGUA",0],
+        ["BARINAS",0],
+        ["BOLIVAR",0],
+        ["CARABOBO",0],
+        ["COJEDES",0],
+        ["DELTA AMACURO",0],
+        ["FALCON",0],
+        ["GUARICO",0],
+        ["LARA",0],
+        ["MERIDA",0],
+        ["MIRANDA",0],
+        ["MONAGAS",0],
+        ["NUEVA ESPARTA",0],
+        ["PORTUGUESA",0],
+        ["SUCRE",0],
+        ["TACHIRA",0],
+        ["TRUJILLO",0],
+        ["VARGAS",0], 
+        ["YARACUY",0],
+        ["ZULIA",0],
+        ["DISTRITO CAPITAL",0]
+
+        
+    ];
+     
+if (!empty($args['params'])) {
+    $params = EliminarBarrasURL($args['params']);
     
+}else {
+    $array = [];
+    return json_encode(validarDatosReturn($array));
+}
 
-        $sql = "SELECT COUNT(`pozo`.`id`) as total,pozo.operatividad, `estados`.`estado`
-        FROM `pozo` 
-            LEFT JOIN `estados` ON `pozo`.`id_estado` = `estados`.`id_estado`
-                WHERE pozo.id_estado = ? AND pozo.operatividad = ?";
-        $db = New DB();
+if (isset($params[0]) AND isset($params[1])) {
+    $db = New DB();
 
+    switch ($params[2]) {
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        case 'pozos_rehabilitados':
+
+            $sql = "SELECT COUNT(rehabilitacion_pozo.id) as total,reporte.fecha, reporte.id_estado, estados.estado
+            FROM rehabilitacion_pozo 
+                LEFT JOIN `reporte` ON `rehabilitacion_pozo`.`id_reporte` = reporte.id
+                LEFT JOIN `estados` ON `reporte`.`id_estado` = estados.id_estado 
+                WHERE reporte.fecha
+                BETWEEN ? AND ?            
+                    GROUP BY (reporte.id_estado)";        
+            $PozosRehabilitados = $db->consultaAll('mapa',$sql, [$params[0],$params[1]]);
         
-        if (empty($array)) {
-            return "LA CONSULTA NO TIENE RESULTADOS";
-        }else {            
-            return json_encode($array);
+        if (count($PozosRehabilitados) > 0) {
+            for ($i=0; $i < count($PozosRehabilitados) ; $i++) { 
+                $estado = $PozosRehabilitados[$i]["id_estado"] - 1;
+                $array[$estado][1] = $PozosRehabilitados[$i]["total"];
+            }
         }
-        
+        return validarDatosReturn($array);                 
 
+        break;
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        case 'operatividad_abastecimiento':
+
+        $sql = "SELECT AVG(operatividad_abastecimiento.porcentaje_operatividad) as total_Operatividad,AVG(operatividad_abastecimiento.porcentaje_abastecimiento) as total_Abastecimiento,reporte.fecha, reporte.id_estado, estados.estado
+        FROM operatividad_abastecimiento 
+            LEFT JOIN `reporte` ON operatividad_abastecimiento.`id_reporte` = reporte.id
+            LEFT JOIN `estados` ON `reporte`.`id_estado` = estados.id_estado
+            WHERE reporte.fecha
+                BETWEEN ? AND ? 
+                GROUP BY (reporte.id_estado)";
+
+        $operatividad_abastecimiento = $db->consultaAll('mapa',$sql, [$params[0],$params[1]]);
                 
-    });
+        if (count($operatividad_abastecimiento) > 0) {
+            for ($i=0; $i < count($operatividad_abastecimiento) ; $i++) { 
+                $estado = $operatividad_abastecimiento[$i]["id_estado"] - 1;
+                $array[$estado][1] = $operatividad_abastecimiento[$i]["total_Abastecimiento"];
+                $array[$estado][2] = $operatividad_abastecimiento[$i]["total_Operatividad"];
+            }
+        }
+
+        return validarDatosReturn($array);                 
+
+        break;
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        case 'tomas_eliminadas':
+
+            $sql = "SELECT COUNT(tomas_ilegales.id) AS total,reporte.fecha, reporte.id_estado, estados.estado
+            FROM tomas_ilegales 
+                LEFT JOIN `reporte` ON tomas_ilegales.`id_reporte` = reporte.id
+                LEFT JOIN `estados` ON `reporte`.`id_estado` = estados.id_estado 
+                WHERE reporte.fecha
+                BETWEEN 2022-05-01 AND 2022-06-30
+                    GROUP BY (reporte.id_estado)";
+
+            $tomas_eliminadas = $db->consultaAll('mapa',$sql, [$params[0],$params[1]]);
+
+        if (count($sql) > 0) {
+            for ($i=0; $i < count($tomas_eliminadas) ; $i++) { 
+                $estado = $tomas_eliminadas[$i]["id_estado"] - 1;
+                $array[$estado][1] = $tomas_eliminadas[$i]["total"];
+            }
+        }
+
+        return validarDatosReturn($array); 
+
+        break;        
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        case 'fugas_reparadas':
+
+            $sql = "SELECT COUNT(fugas.id) AS total,reporte.fecha, reporte.id_estado, estados.estado
+            FROM fugas 
+                LEFT JOIN `reporte` ON fugas.`id_reporte` = reporte.id
+                LEFT JOIN `estados` ON `reporte`.`id_estado` = estados.id_estado 
+                WHERE reporte.fecha
+                BETWEEN 2022-05-01 AND 2022-06-30
+                    GROUP BY (reporte.id_estado)";
+                            
+            $fugas_reparadas = $db->consultaAll('mapa',$sql, [$params[0],$params[1]]);
+
+        if (count($sql) > 0) {
+            for ($i=0; $i < count($fugas_reparadas) ; $i++) { 
+                $estado = $fugas_reparadas[$i]["id_estado"] - 1;
+                $array[$estado][1] = $fugas_reparadas[$i]["total"];
+            }
+        }
+        return validarDatosReturn($array);                 
+
+        break;        
+
+
+
+
+        default:
+        return validarDatosReturn($array);                 
+        
+            break;
+    }
+   
+}
+});
 
 
 
@@ -1401,7 +1461,7 @@ $app->post('/api/formularios/reportes', function (Request $request, Response $re
     ['`id_estado`', '`porcentaje_operatividad`', '`porcentaje_abastecimiento`', '`observacion`', '`id_reporte`'],
     ['`nombre`', '`operatividad`', '`lps`', '`id_estado`', '`id_municipio`', '`id_parroquia`', '`sector`', '`poblacion`'],
     ['`nombre`', '`id_estado`', '`id_municipio`', '`id_parroquia`', '`sector`', '`cantidad_integrantes`', '`dotacion`', '`formacion`'],
-    ['`nombre`', '`cantidad_pp`', '`cantidad_eb`', '`cantidad_pozo`', '`id_estado`']
+    ['`nombre`', '`cantidad_pp`', '`cantidad_eb`', '`cantidad_pozo`', '`id_estado`','`cantidad_fuentes`']
 
     ];
 
@@ -1415,7 +1475,7 @@ $app->post('/api/formularios/reportes', function (Request $request, Response $re
         ["integer", "integer", "integer", "string"],                                            //operatividad_abastecimiento
         ["string", "integer", "integer", "integer", "integer", "integer", "string", "integer"], //pozo
         ["string", "integer", "integer", "integer", "string", "integer", "integer", "integer"], //brippas
-        ["string", "integer", "integer", "integer", "integer"]                                             //sistemas
+        ["string", "integer", "integer", "integer", "integer", "integer"]                                             //sistemas
     ];
 
     
