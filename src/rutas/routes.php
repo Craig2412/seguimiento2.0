@@ -3,6 +3,37 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
 $app = new \Slim\App;
+session_start();
+ob_start();
+$_SESSION['TypeConsult'] = 
+[
+    'produccion',//0 
+    'rehabilitacion_pozo',//1 
+    'fugas',//2 
+    'tomas_ilegales',//3 
+    'reparaciones_brippas',//4
+    'afectaciones',//5 
+    'operatividad_abastecimiento',//6
+    'pozo',//7
+    'brippas',//8
+    'sistemas'//9
+];
+
+$_SESSION['Meses'] = 
+[
+    ["ENERO",0],
+    ["FEBRERO",0],
+    ["MARZO",0],
+    ["ABRIL",0],
+    ["MAYO",0],
+    ["JUNIO",0],
+    ["JULIO",0],
+    ["AGOSTO",0],
+    ["SEPTIEMBRE",0],
+    ["OCTUBRE",0],
+    ["NOVIEMBRE",0],
+    ["DICIEMBRE",0]
+];
 
 require __DIR__ . '/../dotenv/dotenvRun.php';
 require __DIR__ . '/../jwtMiddleware/tuupola.php';
@@ -196,18 +227,8 @@ VALORES NECESARIOS
 
 */
 
-$TablaConsultar = [
-    'produccion',//0 
-    'rehabilitacion_pozo',//1 
-    'fugas',//2 
-    'tomas_ilegales',//3 
-    'reparaciones_brippas',//4
-    'afectaciones',//5 
-    'operatividad_abastecimiento',//6
-    'pozo',//7
-    'brippas',//8
-    'sistemas'//9
-];
+$TablaConsultar = $_SESSION['TypeConsult'];
+
 
 $db = new DB();
 
@@ -563,18 +584,7 @@ $app->get('/api/desplegables/estados[/{id}]', function (Request $request, Respon
 
     $app->get('/api/reportes/dia', function (Request $request, Response $response) {
 
-        $TablaConsultar = [
-            'produccion',//0 
-            'rehabilitacion_pozo',//1 
-            'fugas',//2 
-            'tomas_ilegales',//3 
-            'reparaciones_brippas',//4
-            'afectaciones',//5 
-            'operatividad_abastecimiento',//6
-            'pozo',//7
-            'brippas',//8
-            'sistemas'//9
-        ];
+        $TablaConsultar = $_SESSION['TypeConsult'];
 
 
         $db = New DB();
@@ -644,18 +654,7 @@ $app->get('/api/reportes/unico[/{params:.*}]', function (Request $request, Respo
     3 -      */ 
     $db = New DB();
   
-    $TablaConsultar = [
-        'produccion',//0 
-        'rehabilitacion_pozo',//1 
-        'fugas',//2 
-        'tomas_ilegales',//3 
-        'reparaciones_brippas',//4
-        'afectaciones',//5 
-        'operatividad_abastecimiento',//6
-        'pozo',//7
-        'brippas',//8
-        'sistemas'//9
-    ];
+    $TablaConsultar = $_SESSION['TypeConsult'];
 
    
     
@@ -735,19 +734,7 @@ $app->get('/api/reportes/estado[/{params:.*}]', function (Request $request, Resp
     3 - Parroquia     */    
     $db = New DB();
     /**/
-    $TablaConsultar = [
-        'produccion',//0 
-        'rehabilitacion_pozo',//1 
-        'fugas',//2 
-        'tomas_ilegales',//3 
-        'reparaciones_brippas',//4
-        'afectaciones',//5 
-        'operatividad_abastecimiento',//6
-        'pozo',//7
-        'brippas',//8
-        'sistemas'//9
-    ];
-
+    $TablaConsultar = $_SESSION['TypeConsult'];
    
     
     if (!empty($params[0]) && is_numeric($params[0])) {
@@ -841,18 +828,7 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
         ///////////////
     3 - Si el reporte es por estados aca va el id del estado solicitado
     */
-    $TablaConsultar = [
-    'produccion',//0 
-    'rehabilitacion_pozo',//1 
-    'fugas',//2 
-    'tomas_ilegales',//3 
-    'reparaciones_brippas',//4
-    'afectaciones',//5 
-    'operatividad_abastecimiento',//6
-    'pozo',//7
-    'brippas',//8
-    'sistemas'//9
-    ];
+    $TablaConsultar = $_SESSION['TypeConsult'];
     
     $db = New DB();    
 
@@ -1449,8 +1425,8 @@ if (isset($params[0]) AND isset($params[1])) {
 
 $app->post('/api/formularios/reportes', function (Request $request, Response $response) {
     $body = json_decode($request->getBody());
-    $TablaConsultar = ['produccion','rehabilitacion_pozo','fugas','tomas_ilegales','reparaciones_brippas','afectaciones','operatividad_abastecimiento','pozo','brippas','sistemas'];
-    
+    $TablaConsultar = $_SESSION['TypeConsult'];
+
     $tablasInsertar=[
     ['`metros_cubicos`', '`id_estado`', '`id_reporte`'],
     ['`lps`', '`id_pozo`', '`id_reporte`'],
@@ -1565,17 +1541,7 @@ $app->post('/api/reportes/eliminar', function (Request $request, Response $respo
 
 // DATOS = TIPO DE INFORME/CONSULTA
 //ID DEL INFORME A ELIMINAR
-    $TablaConsultar = 
-    ['produccion'
-    ,'rehabilitacion_pozo'
-    ,'fugas'
-    ,'tomas_ilegales'
-    ,'reparaciones_brippas'
-    ,'afectaciones'
-    ,'operatividad_abastecimiento'
-    ,'pozo'
-    ,'brippas'
-    ,'sistemas'];
+    $TablaConsultar = $_SESSION['TypeConsult'];
 
     
 

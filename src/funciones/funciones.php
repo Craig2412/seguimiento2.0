@@ -224,3 +224,49 @@ function generarSqlRegistro($tablaRegistrar,$tipoFormulario,$nombreTabla) { //ge
 }
 
 
+
+function validarDatosFormulario($datosValidar,$tipoValidacion, $tipoDatos) { 
+    
+    //ENVIAR LOS DATOS A VALIDAR EN UN ARRAY
+if (isset($tipoValidacion) && is_numeric($tipoValidacion) && (gettype($datosValidar) === "array")) {
+   
+        
+        if (count($tipoDatos) === count($datosValidar)) {
+
+            for ($i=0; $i < count($datosValidar); $i++) { 
+                if ( (!isset($datosValidar[$i])) && (gettype($datosValidar[$i]) !== $tipoDatos[$i])) {
+                    return 'ERROR EN EL DATO'.$datosValidar[$i]; 
+                }
+            }
+
+         return 'OK';
+   
+}else {
+    return 'PARAMETROS DE BUSQUEDA NO VALIDOS';
+}
+
+    var_dump(gettype($datosValidar));
+    
+}
+}
+
+
+function validarDatosReturn($returnValidar) { 
+
+    if (count($returnValidar) === 0) {
+        $array = [
+            "cod" => "error",
+            "cont" => "LA CONSULTA NO TIENE RESULTADOS" 
+        ];
+        return json_encode($array);
+    }else {   
+        return json_encode($returnValidar);
+    }
+    
+    
+
+}
+
+
+
+
