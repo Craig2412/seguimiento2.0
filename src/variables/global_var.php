@@ -31,3 +31,31 @@ $_SESSION['Meses'] =
     ["NOVIEMBRE",0],
     ["DICIEMBRE",0]
 ];
+
+
+$_SESSION['Estados'] = [
+    ["AMAZONAS",0],
+    ["ANZOATEGUI",0],
+    ["APURE",0],
+    ["ARAGUA",0],
+    ["BARINAS",0],
+    ["BOLIVAR",0],
+    ["CARABOBO",0],
+    ["COJEDES",0],
+    ["DELTA AMACURO",0],
+    ["FALCON",0],
+    ["GUARICO",0],
+    ["LARA",0],
+    ["MERIDA",0],
+    ["MIRANDA",0],
+    ["MONAGAS",0],
+    ["NUEVA ESPARTA",0],
+    ["PORTUGUESA",0],
+    ["SUCRE",0],
+    ["TACHIRA",0],
+    ["TRUJILLO",0],
+    ["VARGAS",0], 
+    ["YARACUY",0],
+    ["ZULIA",0],
+    ["DISTRITO CAPITAL",0]
+];

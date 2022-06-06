@@ -562,32 +562,7 @@ $app->get('/api/desplegables/estados[/{id}]', function (Request $request, Respon
         $sql = "SELECT reporte.* FROM `reporte` WHERE TO_DAYS(reporte.fecha) = TO_DAYS(NOW())";
         $resultado= $db->consultaAll('mapa',$sql);
 
-        $array=[
-            ["AMAZONAS"],
-            ["ANZOATEGUI"],
-            ["APURE"],
-            ["ARAGUA"],
-            ["BARINAS"],
-            ["BOLIVAR"],
-            ["CARABOBO"],
-            ["COJEDES"],
-            ["DELTA AMACURO"],
-            ["FALCON"],
-            ["GUARICO"],
-            ["LARA"],
-            ["MERIDA"],
-            ["MIRANDA"],
-            ["MONAGAS"],
-            ["NUEVA ESPARTA"],
-            ["PORTUGUESA"],
-            ["SUCRE"],
-            ["TACHIRA"],
-            ["TRUJILLO"],
-            ["VARGAS"], 
-            ["YARACUY"],
-            ["ZULIA"],
-            ["DISTRITO CAPITAL"]
-        ];
+        $array = $_SESSION['Estados'];
 
 
         for ($i=0; $i < count($resultado); $i++) { 
@@ -949,7 +924,7 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
                                                      $params[1], 
                                                      $params[2]]);
             
-            return validarDatosReturn($reporte);                                         return json_encode($reporte);
+            return validarDatosReturn($reporte);
         }
 
     }else{
@@ -977,11 +952,31 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
 
 
     $app->get('/api/dashboard/lps_recuperados[/{id_estado}]', function (Request $request, Response $response) {
-
-        if ($request->getAttribute('id_estado')) {
-            $id = $request->getAttribute('id_estado');
+//PARAMETROS NECESARIOS       
+       
+        //FECHA INICIAL
+        //FECHA FINAL
+        //ID_ESTADO
+        
+        if (!empty($args['params'])) {
+            $params = EliminarBarrasURL($args['params']);
+            
+        }else {
+            $array = [];
+            return json_encode(validarDatosReturn($array));
         }
 
+        
+        if ($params[2]) {
+            $id = $params[2];
+        }
+
+        if (!isset($params[1]) OR !isset($params[0])) {
+           return  [
+            "cod" => "error",
+            "cont" => "FALTAN PARAMETROS DE FECHA" 
+            ];
+        }
 
         if (isset($id)) {
             $sql = "SELECT `reporte`.`fecha`, SUM(`rehabilitacion_pozo`.`lps`) AS total, `pozo`.`id_estado`, `estados`.`estado`
@@ -989,27 +984,24 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
                     LEFT JOIN `rehabilitacion_pozo` ON `rehabilitacion_pozo`.`id_reporte` = `reporte`.`id` 
                     LEFT JOIN `pozo` ON `rehabilitacion_pozo`.`id_pozo` = `pozo`.`id` 
                     LEFT JOIN `estados` ON `pozo`.`id_estado` = `estados`.`id_estado`
-                    WHERE pozo.id_estado = ?
+                    WHERE pozo.id_estado = ? AND reporte.fecha BETWEEN ? AND ?
                     GROUP BY (reporte.fecha)";
                 $db = New DB();
-                $resultado = $db->consultaAll('mapa',$sql, [$id]);
+                $resultado = $db->consultaAll('mapa',$sql, [$id,$params[0],$params[1]]);
         }else {
          $sql = "SELECT `reporte`.`fecha`, SUM(`rehabilitacion_pozo`.`lps`) AS total, `pozo`.`id_estado`, `estados`.`estado`
             FROM `reporte` 
             LEFT JOIN `rehabilitacion_pozo` ON `rehabilitacion_pozo`.`id_reporte` = `reporte`.`id` 
             LEFT JOIN `pozo` ON `rehabilitacion_pozo`.`id_pozo` = `pozo`.`id` 
             LEFT JOIN `estados` ON `pozo`.`id_estado` = `estados`.`id_estado`
+            AND reporte.fecha BETWEEN ? AND ?
             GROUP BY (reporte.fecha)";
         $db = New DB();
-        $resultado = $db->consultaAll('mapa',$sql);
+        $resultado = $db->consultaAll('mapa',$sql,[$params[0],$params[1]]);
         }
         
-
-
         $array= $_SESSION['Meses'];
  
-
-
         for ($i=0; $i < count($resultado) ; $i++) { 
             $fecha = strtotime($resultado[$i]["fecha"]);
             $mes = date("m", $fecha);
@@ -1039,35 +1031,53 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
 
 
     $app->get('/api/dashboard/tomas_ilegales[/{id_estado}]', function (Request $request, Response $response) {
+//PARAMETROS NECESARIOS       
+       
+        //FECHA INICIAL
+        //FECHA FINAL
+        //ID_ESTADO
+        
+        if (!empty($args['params'])) {
+            $params = EliminarBarrasURL($args['params']);
+            
+        }else {
+            $array = [];
+            return json_encode(validarDatosReturn($array));
+        }
 
-            if ($request->getAttribute('id_estado')) {
-                $id = $request->getAttribute('id_estado');
-            }
-    
+        
+        if ($params[2]) {
+            $id = $params[2];
+        }
+
+        if (!isset($params[1]) OR !isset($params[0])) {
+           return  [
+            "cod" => "error",
+            "cont" => "FALTAN PARAMETROS DE FECHA" 
+            ];
+        }
     
             if (isset($id)) {
                 $sql = "SELECT `reporte`.`fecha`, SUM(`tomas_ilegales`.`cantidad_tomas_eliminadas`)AS total, `estados`.`estado`
                 FROM `reporte` 
                     LEFT JOIN `tomas_ilegales` ON `tomas_ilegales`.`id_reporte` = `reporte`.`id` 
                     LEFT JOIN `estados` ON `tomas_ilegales`.`id_estado` = `estados`.`id_estado`
-                    WHERE tomas_ilegales.id_estado = ?
+                    WHERE tomas_ilegales.id_estado = ? AND reporte.fecha BETWEEN ? AND ?
                     GROUP BY (reporte.fecha)";
                     $db = New DB();
-                    $resultado = $db->consultaAll('mapa',$sql, [$id]);
+                    $resultado = $db->consultaAll('mapa',$sql, [$id,$params[0],$params[1]]);
             }else {
                 $sql = "SELECT `reporte`.`fecha`, SUM(`tomas_ilegales`.`cantidad_tomas_eliminadas`)AS total, `estados`.`estado`
                 FROM `reporte` 
                     LEFT JOIN `tomas_ilegales` ON `tomas_ilegales`.`id_reporte` = `reporte`.`id` 
                     LEFT JOIN `estados` ON `tomas_ilegales`.`id_estado` = `estados`.`id_estado`
+                    AND reporte.fecha BETWEEN ? AND ?
                     GROUP BY (reporte.fecha)";
                      $db = New DB();
-                     $resultado = $db->consultaAll('mapa',$sql);
+                     $resultado = $db->consultaAll('mapa',$sql,[$params[0],$params[1]]);
             }
             
               $array=$_SESSION['Meses'];
-
-
-            
      
             for ($i=0; $i < count($resultado) ; $i++) { 
                 $fecha = strtotime($resultado[$i]["fecha"]);
@@ -1097,34 +1107,57 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
 
 
 
-    $app->get('/api/dashboard/fugas[/{id_estado}]', function (Request $request, Response $response) {
-
-        if ($request->getAttribute('id_estado')) {
-            $id = $request->getAttribute('id_estado');
+    $app->get('/api/dashboard/fugas[/{params:.*}]', function (Request $request, Response $response, $args) {
+//PARAMETROS NECESARIOS       
+       
+        //FECHA INICIAL
+        //FECHA FINAL
+        //ID_ESTADO
+        
+        if (!empty($args['params'])) {
+            $params = EliminarBarrasURL($args['params']);
+            
+        }else {
+            $array = [];
+            return json_encode(validarDatosReturn($array));
         }
+
+        
+        if ($params[2]) {
+            $id = $params[2];
+        }
+
+        if (!isset($params[1]) OR !isset($params[0])) {
+           return  [
+            "cod" => "error",
+            "cont" => "FALTAN PARAMETROS DE FECHA" 
+            ];
+        }
+
 
         if (isset($id)) {
             $sql = "SELECT `reporte`.`fecha`, SUM(`fugas`.`cantidad_fugas_reparadas`)AS total, `estados`.`estado`
             FROM `reporte` 
             LEFT JOIN `fugas` ON `fugas`.`id_reporte` = `reporte`.`id` 
             LEFT JOIN `estados` ON `fugas`.`id_estado` = `estados`.`id_estado`
-            WHERE fugas.id_estado = ?
+            WHERE fugas.id_estado = ? AND reporte.fecha BETWEEN ? AND ?
             GROUP BY (reporte.fecha)";
                 $db = New DB();
-                $resultado = $db->consultaAll('mapa',$sql, [$id]);
+                $resultado = $db->consultaAll('mapa',$sql, [$id,$params[0],$params[1]]);
+
         }else {
-            $sql = "SELECT `reporte`.`fecha`, SUM(`fugas`.`cantidad_fugas_reparadas`) AS total, `estados`.`estado`
+            $sql = "SELECT `reporte`.`fecha`, SUM(`fugas`.`cantidad_fugas_reparadas`)AS total, `estados`.`estado`
             FROM `reporte` 
             LEFT JOIN `fugas` ON `fugas`.`id_reporte` = `reporte`.`id` 
             LEFT JOIN `estados` ON `fugas`.`id_estado` = `estados`.`id_estado`
+            WHERE reporte.fecha BETWEEN ? AND ?
             GROUP BY (reporte.fecha)";
                  $db = New DB();
-                 $resultado = $db->consultaAll('mapa',$sql);
+                 $resultado = $db->consultaAll('mapa',$sql,[$params[0],$params[1]] );
 
         }
         
           $array = $_SESSION['Meses'];
-
 
         for ($i=0; $i < count($resultado) ; $i++) { 
             $fecha = strtotime($resultado[$i]["fecha"]);
@@ -1153,25 +1186,39 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
 
 
 
-    $app->get('/api/dashboard/pozos_operativos[/{id_estado}]', function (Request $request, Response $response) {
-              $id = $request->getAttribute('id_estado'); 
+    $app->get('/api/dashboard/pozos_operativos[/{id_estado}]', function (Request $request, Response $response) {      
+        
+        if ($request->getAttribute('id_estado')) {            
+            $id = $request->getAttribute('id_estado'); 
+        }   
 
-        $sql = "SELECT COUNT(`pozo`.`id`) as total,pozo.operatividad, `estados`.`estado`
+        $db = New DB();
+
+        if (isset($id)) {
+            $sql = "SELECT COUNT(`pozo`.`id`) as total,pozo.operatividad, `estados`.`estado`
         FROM `pozo` 
             LEFT JOIN `estados` ON `pozo`.`id_estado` = `estados`.`id_estado`
                 WHERE pozo.id_estado = ? AND pozo.operatividad = ?";
-        $db = New DB();
 
         $array = [
             "operativos" => $db->consultaAll('mapa',$sql, [$id,1]),
             "inoperativos" => $db->consultaAll('mapa',$sql, [$id,0])
         ];
-
+            
+        }else {
+            $sql = "SELECT COUNT(`pozo`.`id`) as total,pozo.operatividad, `estados`.`estado`
+            FROM `pozo` 
+                LEFT JOIN `estados` ON `pozo`.`id_estado` = `estados`.`id_estado`
+                    WHERE pozo.operatividad = ?";
+    
+            $array = [
+                "operativos" => $db->consultaAll('mapa',$sql, [1]),
+                "inoperativos" => $db->consultaAll('mapa',$sql, [0])
+            ];
+        }
+        
         return validarDatosReturn($array);                 
 
-        
-
-                
     });
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1184,34 +1231,7 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
      //FECHA FINAL 
      //EL TIPO DE CONSULTA => 'pozos_rehabilitados'
 
-     $array=[
-        ["AMAZONAS",0],
-        ["ANZOATEGUI",0],
-        ["APURE",0],
-        ["ARAGUA",0],
-        ["BARINAS",0],
-        ["BOLIVAR",0],
-        ["CARABOBO",0],
-        ["COJEDES",0],
-        ["DELTA AMACURO",0],
-        ["FALCON",0],
-        ["GUARICO",0],
-        ["LARA",0],
-        ["MERIDA",0],
-        ["MIRANDA",0],
-        ["MONAGAS",0],
-        ["NUEVA ESPARTA",0],
-        ["PORTUGUESA",0],
-        ["SUCRE",0],
-        ["TACHIRA",0],
-        ["TRUJILLO",0],
-        ["VARGAS",0], 
-        ["YARACUY",0],
-        ["ZULIA",0],
-        ["DISTRITO CAPITAL",0]
-
-        
-    ];
+     $array= $_SESSION['Estados'];
      
 if (!empty($args['params'])) {
     $params = EliminarBarrasURL($args['params']);
