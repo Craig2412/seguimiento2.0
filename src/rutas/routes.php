@@ -3,37 +3,7 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
 $app = new \Slim\App;
-session_start();
-ob_start();
-$_SESSION['TypeConsult'] = 
-[
-    'produccion',//0 
-    'rehabilitacion_pozo',//1 
-    'fugas',//2 
-    'tomas_ilegales',//3 
-    'reparaciones_brippas',//4
-    'afectaciones',//5 
-    'operatividad_abastecimiento',//6
-    'pozo',//7
-    'brippas',//8
-    'sistemas'//9
-];
 
-$_SESSION['Meses'] = 
-[
-    ["ENERO",0],
-    ["FEBRERO",0],
-    ["MARZO",0],
-    ["ABRIL",0],
-    ["MAYO",0],
-    ["JUNIO",0],
-    ["JULIO",0],
-    ["AGOSTO",0],
-    ["SEPTIEMBRE",0],
-    ["OCTUBRE",0],
-    ["NOVIEMBRE",0],
-    ["DICIEMBRE",0]
-];
 
 require __DIR__ . '/../dotenv/dotenvRun.php';
 require __DIR__ . '/../jwtMiddleware/tuupola.php';
@@ -42,6 +12,7 @@ require __DIR__ . '/../funciones/funciones.php';
 require __DIR__ . '/../class/classRegistros.php';
 require __DIR__ . '/../class/classPaginador.php';
 require __DIR__ . '/../config/db.php';
+require __DIR__ . '/../variables/global_var.php';
 
 $app->add(Tuupola());
 
@@ -894,12 +865,7 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
                 $reporte= $db->consultaAll('mapa',$sql, [$params[1], 
                                                          $params[2]]);
 
-            if (empty($reporte)) {
-                        return "LA CONSULTA NO TIENE RESULTADOS";
-                    }else {            
-                        return json_encode($reporte);
-                    }
-        
+           return validarDatosReturn($reporte);
 
         }else {
 
@@ -966,11 +932,7 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
                                                      $params[2]]);
 
 
-            if (empty($reporte)) {
-                        return "LA CONSULTA NO TIENE RESULTADOS";
-                    }else {            
-                        return json_encode($resultado);
-                    }
+            return validarDatosReturn($reporte);
         
 
         }else{
@@ -1044,20 +1006,7 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
         
 
 
-        $array=[
-            ["ENERO",0],
-            ["FEBRERO",0],
-            ["MARZO",0],
-            ["ABRIL",0],
-            ["MAYO",0],
-            ["JUNIO",0],
-            ["JULIO",0],
-            ["AGOSTO",0],
-            ["SEPTIEMBRE",0],
-            ["OCTUBRE",0],
-            ["NOVIEMBRE",0],
-            ["DICIEMBRE",0]
-        ];
+        $array= $_SESSION['Meses'];
  
 
 
@@ -1115,20 +1064,7 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
                      $resultado = $db->consultaAll('mapa',$sql);
             }
             
-              $array=[
-                ["ENERO",0],
-                ["FEBRERO",0],
-                ["MARZO",0],
-                ["ABRIL",0],
-                ["MAYO",0],
-                ["JUNIO",0],
-                ["JULIO",0],
-                ["AGOSTO",0],
-                ["SEPTIEMBRE",0],
-                ["OCTUBRE",0],
-                ["NOVIEMBRE",0],
-                ["DICIEMBRE",0]
-            ];
+              $array=$_SESSION['Meses'];
 
 
             
@@ -1187,20 +1123,7 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
 
         }
         
-          $array=[
-            ["ENERO",0],
-            ["FEBRERO",0],
-            ["MARZO",0],
-            ["ABRIL",0],
-            ["MAYO",0],
-            ["JUNIO",0],
-            ["JULIO",0],
-            ["AGOSTO",0],
-            ["SEPTIEMBRE",0],
-            ["OCTUBRE",0],
-            ["NOVIEMBRE",0],
-            ["DICIEMBRE",0]
-        ];
+          $array = $_SESSION['Meses'];
 
 
         for ($i=0; $i < count($resultado) ; $i++) { 

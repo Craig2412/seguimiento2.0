@@ -258,6 +258,7 @@ function validarDatosReturn($returnValidar) {
             "cod" => "error",
             "cont" => "LA CONSULTA NO TIENE RESULTADOS" 
         ];
+                
         return json_encode($array);
     }else {   
         return json_encode($returnValidar);
