@@ -967,7 +967,7 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
         }
 
         
-        if ($params[2]) {
+        if (isset($params[2])) {
             $id = $params[2];
         }
 
@@ -1046,7 +1046,7 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
         }
 
         
-        if ($params[2]) {
+        if (isset($params[2])) {
             $id = $params[2];
         }
 
