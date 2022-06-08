@@ -259,7 +259,7 @@ function validarDatosReturn($returnValidar, $response= null) {
             "cont" => "LA CONSULTA NO TIENE RESULTADOS" 
         ];
         return $response->withJson($array, 204)
-                        ->withHeader('infomation', 'LA CONSULTA NO TIENE RESULTADOS');
+                        ->withHeader('Information', 'LA CONSULTA NO TIENE RESULTADOS');
     }else {   
         return json_encode($returnValidar);
     }
