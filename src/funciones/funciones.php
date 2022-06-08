@@ -251,15 +251,15 @@ if (isset($tipoValidacion) && is_numeric($tipoValidacion) && (gettype($datosVali
 }
 
 
-function validarDatosReturn($returnValidar) { 
+function validarDatosReturn($returnValidar, $response= null) { 
 
     if (count($returnValidar) === 0) {
         $array = [
             "cod" => "error",
             "cont" => "LA CONSULTA NO TIENE RESULTADOS" 
         ];
-                
-        return json_encode($array);
+        return $response->withJson($array, 204)
+                        ->withHeader('infomation', 'LA CONSULTA NO TIENE RESULTADOS');
     }else {   
         return json_encode($returnValidar);
     }

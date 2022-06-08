@@ -839,8 +839,8 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
 
                 $reporte= $db->consultaAll('mapa',$sql, [$params[1], 
                                                          $params[2]]);
-
-           return validarDatosReturn($reporte);
+                                                         
+                return validarDatosReturn($reporte, $response);
 
         }else {
 
@@ -855,7 +855,9 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
 
                 $reporte= $db->consultaAll('mapa',$sql, [$params[1], 
                                                          $params[2]]);
-                return json_encode($reporte);
+                                                         
+            return validarDatosReturn($reporte, $response);
+                                                         
         }
       
 
@@ -906,8 +908,7 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
                                                      $params[1], 
                                                      $params[2]]);
 
-
-            return validarDatosReturn($reporte);
+             return validarDatosReturn($reporte, $response);
         
 
         }else{
@@ -924,11 +925,11 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
                                                      $params[1], 
                                                      $params[2]]);
             
-            return validarDatosReturn($reporte);
+             return validarDatosReturn($reporte, $response);
         }
 
     }else{
-        return validarDatosReturn($array);;
+        return validarDatosReturn($array, $response);;
 }     
 });
 ////////////////////////////////////////////////////FIN/////////////////////////////////////////////////////// 
