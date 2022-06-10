@@ -419,20 +419,29 @@ $valorSQL = null;
 
 //////////////////////////////////////ESTADOS
 $app->get('/api/desplegables/estados[/{id}]', function (Request $request, Response $response) {
-    $id = $request->getAttribute('id');
-    $db = New DB();
+    $id = $request->getAttribute('id')+0;
     if ($id) {
-        $sql = "SELECT estados.id_estado, estados.estado
-        FROM estados where estados.id_estado = ?";
-        $estado= $db->consultaAll('mapa',$sql, [$id]);
-        unset($estado[24]);
-        return json_encode($estado);
-    } else{
-        $sql = "SELECT estados.id_estado, estados.estado
-        FROM estados";
-        $esta= $db->consultaAll('mapa',$sql);
-        unset($esta[24]);
-        return json_encode($esta);
+        $sql = "SELECT hidrologicas.* FROM hidrologicas WHERE hidrologicas.id_hidrologica = ?";
+        $db = new DB();
+        $resultado = $db->consultaAll('mapa',$sql, [$id]);
+
+        if ($resultado) {
+
+            $sql = "SELECT estados.id_estado, estados.estado
+                    FROM estados
+                    WHERE estados.id_estado 
+                    IN (? , ? , ?)";
+            $resultado = $db->consultaAll('mapa',$sql, [$resultado[0]['id_estado'],$resultado[0]['id_estado2'],$resultado[0]['id_estado3']]);
+            return $response->withJson($resultado); 
+
+        }
+    }else{
+
+        $sql = "SELECT `estados`.`id_estado`, `estados`.`estado` FROM `estados`";
+        $db = new DB();
+        $resultado = $db->consultaAll('mapa',$sql);      
+        return $response->withJson($resultado);                        
+
     }
     
         
