@@ -432,16 +432,17 @@ $app->get('/api/desplegables/estados[/{id}]', function (Request $request, Respon
                     WHERE estados.id_estado 
                     IN (? , ? , ?)";
             $resultado = $db->consultaAll('mapa',$sql, [$resultado[0]['id_estado'],$resultado[0]['id_estado2'],$resultado[0]['id_estado3']]);
+            $val= count($resultado)-1;
+            unset($resultado[$val]);
             return $response->withJson($resultado); 
-
         }
     }else{
-
         $sql = "SELECT `estados`.`id_estado`, `estados`.`estado` FROM `estados`";
         $db = new DB();
-        $resultado = $db->consultaAll('mapa',$sql);      
+        $resultado = $db->consultaAll('mapa',$sql);
+        $val= count($resultado)-1;
+        unset($resultado[$val]);      
         return $response->withJson($resultado);                        
-
     }
     
         
