@@ -461,7 +461,7 @@ $app->get('/api/desplegables/estados[/{id}]', function (Request $request, Respon
                 $db = New DB();
                 $resultado = $db->consultaAll('mapa',$sql,[$id]);
 
-                return validarDatosReturn($resultado);
+                return validarDatosReturn($resultado, $response);
     
         });
         
@@ -479,7 +479,7 @@ $app->get('/api/desplegables/estados[/{id}]', function (Request $request, Respon
                     $db = New DB();
                     $resultado = $db->consultaAll('mapa',$sql,[$id]);
 
-                    return validarDatosReturn($resultado);
+                    return validarDatosReturn($resultado, $response);
         
                     
                     
@@ -511,7 +511,7 @@ $app->get('/api/desplegables/estados[/{id}]', function (Request $request, Respon
         }
 
 
-        return validarDatosReturn($resultado);       
+        return validarDatosReturn($resultado, $response);       
                     
     });
 
@@ -542,7 +542,7 @@ $app->get('/api/desplegables/estados[/{id}]', function (Request $request, Respon
             $resultado = $db->consultaAll('mapa',$sql);
 
         }
-        return validarDatosReturn($resultado);
+        return validarDatosReturn($resultado, $response);
         
                     
                     
@@ -557,7 +557,7 @@ $app->get('/api/desplegables/estados[/{id}]', function (Request $request, Respon
             $resultado = $db->consultaAll('mapa',$sql);
                     
 
-            return validarDatosReturn($resultado);
+            return validarDatosReturn($resultado, $response);
         
     });
 
@@ -596,7 +596,7 @@ $app->get('/api/pozo/{id_pozo}', function (Request $request, Response $response)
     $db = New DB();
     $resultado = $db->consultaAll('mapa',$sql,[$id]);  
 
-    return validarDatosReturn($resultado);
+    return validarDatosReturn($resultado, $response);
                    
 });
 
@@ -668,7 +668,7 @@ $app->get('/api/reportes/unico[/{params:.*}]', function (Request $request, Respo
         }
             $reporte= $db->consultaAll('mapa',$sql, [$params[1]]);
      
-            return validarDatosReturn($reporte);
+            return validarDatosReturn($reporte, $response);
     }elseif (count($params) === 3) {
 
         
@@ -758,7 +758,7 @@ $app->get('/api/reportes/estado[/{params:.*}]', function (Request $request, Resp
         }
             $reporte= $db->consultaAll('mapa',$sql, [$params[1]]);
 
-            return validarDatosReturn($reporte);
+            return validarDatosReturn($reporte, $response);
      
         
     }elseif (count($params) === 3) {
@@ -958,7 +958,7 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
         $ultimos_reportes = $db->consultaAll('mapa',$sql);
         $values = array_slice($ultimos_reportes,-5);
 
-        return validarDatosReturn($values);
+        return validarDatosReturn($values, $response);
     });
 
 
@@ -974,7 +974,7 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
             
         }else {
             $array = [];
-            return json_encode(validarDatosReturn($array));
+            return validarDatosReturn($array, $response);
         }
 
         
@@ -1035,7 +1035,7 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
             $array[$mes -1][1] = $array[$mes -1][1] + $resultado[$i]["total"];
     
         }  
-        return validarDatosReturn($array);   
+        return validarDatosReturn($array, $response);   
     });
 
 
@@ -1053,7 +1053,7 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
             
         }else {
             $array = [];
-            return json_encode(validarDatosReturn($array));
+            return validarDatosReturn($array, $response);
         }
 
         
@@ -1112,7 +1112,7 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
                 $array[$mes -1][1] = $array[$mes -1][1] + $resultado[$i]["total"];
         
             }  
-            return validarDatosReturn($array);
+            return validarDatosReturn($array, $response);
 });
      
 
@@ -1130,7 +1130,7 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
             
         }else {
             $array = [];
-            return json_encode(validarDatosReturn($array));
+            return validarDatosReturn($array, $response);
         }
 
         
@@ -1192,7 +1192,7 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
             $array[$mes -1][1] = $array[$mes -1][1] + $resultado[$i]["total"];
     
         }  
-        return validarDatosReturn($array);
+        return validarDatosReturn($array, $response);
     });
 
 
@@ -1228,7 +1228,7 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
             ];
         }
         
-        return validarDatosReturn($array);                 
+        return validarDatosReturn($array, $response);                 
 
     });
 
@@ -1249,7 +1249,7 @@ if (!empty($args['params'])) {
     
 }else {
     $array = [];
-    return json_encode(validarDatosReturn($array));
+    return validarDatosReturn($array, $response);
 }
 
 if (isset($params[0]) AND isset($params[1])) {
@@ -1274,7 +1274,7 @@ if (isset($params[0]) AND isset($params[1])) {
                 $array[$estado][1] = $PozosRehabilitados[$i]["total"];
             }
         }
-        return validarDatosReturn($array);                 
+        return validarDatosReturn($array, $response);                 
 
         break;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1298,7 +1298,7 @@ if (isset($params[0]) AND isset($params[1])) {
             }
         }
 
-        return validarDatosReturn($array);                 
+        return validarDatosReturn($array, $response);                 
 
         break;
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1321,7 +1321,7 @@ if (isset($params[0]) AND isset($params[1])) {
             }
         }
 
-        return validarDatosReturn($array); 
+        return validarDatosReturn($array, $response); 
 
         break;        
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1343,7 +1343,7 @@ if (isset($params[0]) AND isset($params[1])) {
                 $array[$estado][1] = $fugas_reparadas[$i]["total"];
             }
         }
-        return validarDatosReturn($array);                 
+        return validarDatosReturn($array, $response);                 
 
         break;        
 
@@ -1351,7 +1351,7 @@ if (isset($params[0]) AND isset($params[1])) {
 
 
         default:
-        return validarDatosReturn($array);                 
+        return validarDatosReturn($array, $response);                 
         
             break;
     }
@@ -1379,8 +1379,8 @@ if (isset($params[0]) AND isset($params[1])) {
 
 $app->post('/api/formularios/reportes', function (Request $request, Response $response) {
     $body = json_decode($request->getBody());
+    $body= $body->body;
     $TablaConsultar = $_SESSION['TypeConsult'];
-
     $tablasInsertar=[
     ['`metros_cubicos`', '`id_estado`', '`id_reporte`'],
     ['`lps`', '`id_pozo`', '`id_reporte`'],
@@ -1450,7 +1450,7 @@ $app->post('/api/formularios/reportes', function (Request $request, Response $re
                 $stmt2 = $db->consultaAll('mapa', $sqlFormulario, $values);
                 if ($stmt2) {
                 $db = null;
-                return 'REGISTRO EXITOSO, REPORTE NUMERO: '.$stmt->{'insert_id'};
+                return validarDatosReturn(["id"=>$stmt->{'insert_id'}], $response);
             } else {
                 return 'ERROR EN EL REGISTRO DEL REPORTE';
             }
