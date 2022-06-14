@@ -577,7 +577,7 @@ $app->get('/api/desplegables/estados[/{id}]', function (Request $request, Respon
 
     $app->get('/api/reportes/dia', function (Request $request, Response $response) {
 
-        $esta = [
+        $estados_asociativos = [
             ["Amazonas" => []],
             ["Anzoátegui" => []],
             ["Apure" => []],
@@ -603,10 +603,7 @@ $app->get('/api/desplegables/estados[/{id}]', function (Request $request, Respon
             ["Zulia" => []],
             ["Distrito Capital" => []]
         ];
-    
-        //$esta[0]["ANZOATEGUI"]["produccion"] = 1000;
-    //    var_dump($esta);
-    
+        
         $sql = "SELECT reporte.*, tablas.tipo_reporte, estados.estado
         FROM `reporte`
         LEFT JOIN tablas ON reporte.id_tabla = tablas.id
@@ -622,17 +619,14 @@ $app->get('/api/desplegables/estados[/{id}]', function (Request $request, Respon
                 $name_state = $ConsultResult[$i]['estado'];
                 $Type_report_set = $ConsultResult[$i]['tipo_reporte'];
     
-                $esta[$state_id][$name_state][$Type_report_set] = "REPORTADO";
-            }
+                $estados_asociativos[$state_id][$name_state][$Type_report_set] = "REPORTADO";
+            }      
+            return validarDatosReturn($estados_asociativos, $response);
             
-          
-            var_dump($esta);
         }else {
-            return validarDatosReturn($esta, $response);
-        }
-    
-           
-        });
+            return validarDatosReturn($estados_asociativos, $response);
+        }           
+    });
           
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////      
