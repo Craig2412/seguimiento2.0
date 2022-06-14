@@ -604,19 +604,23 @@ $app->get('/api/desplegables/estados[/{id}]', function (Request $request, Respon
         ["DISTRITO CAPITAL" => []]
     ];
 
-    $sql = "SELECT reporte.*
+    $sql = "SELECT reporte.*, tablas.tipo_reporte
     FROM `reporte`
+    LEFT JOIN tablas ON reporte.id_tabla = tablas.id
     WHERE reporte.fecha = CURDATE()";
 
-
     $db = New DB();
+    $resultado = $resultado = $db->consultaAll('mapa', $sql);
+    if (count($resultado) > 0) {
+        
+        //var_dump($resultado[0]);
+        //array_push($esta[0]["Amazonas"], $_SESSION["TypeConsult"][$resultado[0]["id_tabla"]]);
+        $_SESSION['Estados Asociativos'][0]["PRODUCCION"] = 1000;
+        var_dump($_SESSION['Estados Asociativos'][0]);
+        
+       // var_dump($esta);
+    }
 
-    //var_dump($_SESSION['Estados Asociativos'][1]);
- $resultado = $resultado = $db->consultaAll('mapa', $sql);
-    //var_dump($resultado[0]);
-    array_push($esta[0]["Amazonas"], $_SESSION["TypeConsult"][$resultado[0]["id_tabla"]]);
-     
-    var_dump($esta);
     
 
 
@@ -1281,37 +1285,31 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
      //FECHA FINAL 
      //EL TIPO DE CONSULTA => 1 , 2 , 3 , 6 
 
-
-
-
-
-     
      $array= $_SESSION['Estados'];
      
-if (!empty($args['params'])) {
-    $params = EliminarBarrasURL($args['params']);
-    
-}else {
-    $array = [];
-    return validarDatosReturn($array, $response);
-}
-
-if (isset($params[0]) AND isset($params[1])) {
-    
-    if (isset($params[2])) {
-        if (($params[2] != 2) && ($params[2] != 1) && ($params[2] != 3) && ($params[2] != 6)) {
+    if (!empty($args['params'])) {
+        $params = EliminarBarrasURL($args['params']);
+        
+    }else {
         $array = [];
         return validarDatosReturn($array, $response);
-        }
-     }
+    }
 
-    $db = New DB();
+    if (isset($params[0]) AND isset($params[1])) {
+        
+        if (isset($params[2])) {
+            if (($params[2] != 2) && ($params[2] != 1) && ($params[2] != 3) && ($params[2] != 6)) {
+            $array = [];
+            return validarDatosReturn($array, $response);
+            }
+        }
+
+        $db = New DB();
 
 
     switch ($_SESSION["TypeConsult"][$params[2]]) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         case 'rehabilitacion_pozo':
-
             $sql = "SELECT COUNT(rehabilitacion_pozo.id) as total,reporte.fecha, reporte.id_estado, estados.estado
             FROM rehabilitacion_pozo 
                 LEFT JOIN `reporte` ON `rehabilitacion_pozo`.`id_reporte` = reporte.id
@@ -1362,12 +1360,12 @@ if (isset($params[0]) AND isset($params[1])) {
                 LEFT JOIN `reporte` ON tomas_ilegales.`id_reporte` = reporte.id
                 LEFT JOIN `estados` ON `reporte`.`id_estado` = estados.id_estado 
                 WHERE reporte.fecha
-                BETWEEN 2022-05-01 AND 2022-06-30
+                BETWEEN ? AND ?
                     GROUP BY (reporte.id_estado)";
 
             $tomas_eliminadas = $db->consultaAll('mapa',$sql, [$params[0],$params[1]]);
 
-        if (count($sql) > 0) {
+        if (count($tomas_eliminadas) > 0) {
             for ($i=0; $i < count($tomas_eliminadas) ; $i++) { 
                 $estado = $tomas_eliminadas[$i]["id_estado"] - 1;
                 $array[$estado][1] = $tomas_eliminadas[$i]["total"];
@@ -1385,12 +1383,12 @@ if (isset($params[0]) AND isset($params[1])) {
                 LEFT JOIN `reporte` ON fugas.`id_reporte` = reporte.id
                 LEFT JOIN `estados` ON `reporte`.`id_estado` = estados.id_estado 
                 WHERE reporte.fecha
-                BETWEEN 2022-05-01 AND 2022-06-30
+                BETWEEN ? AND ?
                     GROUP BY (reporte.id_estado)";
                             
             $fugas_reparadas = $db->consultaAll('mapa',$sql, [$params[0],$params[1]]);
 
-        if (count($sql) > 0) {
+        if (count($fugas_reparadas) > 0) {
             for ($i=0; $i < count($fugas_reparadas) ; $i++) { 
                 $estado = $fugas_reparadas[$i]["id_estado"] - 1;
                 $array[$estado][1] = $fugas_reparadas[$i]["total"];
@@ -1399,9 +1397,6 @@ if (isset($params[0]) AND isset($params[1])) {
         return validarDatosReturn($array, $response);                 
 
         break;        
-
-
-
 
         default:
         return validarDatosReturn($array, $response);                 
@@ -1439,7 +1434,7 @@ $app->post('/api/formularios/reportes', function (Request $request, Response $re
     ['`lps`', '`id_pozo`', '`id_reporte`'],
     ['`nombre_aduccion`', '`id_estado`', '`id_municipio`', '`id_parroquia`', '`sector`' , '`cantidad_fugas_reparadas`','`id_reporte`', '`lps_recuperados`'],
     ['`nombre_aduccion`', '`id_estado`', '`id_municipio`', '`id_parroquia`', '`sector`' , '`cantidad_tomas_eliminadas`', '`lps`', '`id_reporte`', '`lps_recuperados`'],
-    ['`averias_levantadas_ap`', '`averias_levantadas_ap`', '`averias_levantadas_as`', '`averias_corregidas_as`', '`id_brippas`' , '`id_reporte`'],
+    ['`averias_levantadas_ap`', '`averias_levantadas_ap`', '`averias_levantadas_as`', '`averias_corregidas_as`', '`id_brippas`' , '`id_reporte`', '`lps_recuperados`'],
     ['`id_estado`', '`cantidad`', '`horas_sin_servicio`', '`equipos_danados`', '`id_infraestructura`' , '`id_sistema`', '`id_reporte`'],
     ['`id_estado`', '`porcentaje_operatividad`', '`porcentaje_abastecimiento`', '`observacion`', '`id_reporte`'],
     ['`nombre`', '`operatividad`', '`lps`', '`id_estado`', '`id_municipio`', '`id_parroquia`', '`sector`', '`poblacion`'],
@@ -1453,7 +1448,7 @@ $app->post('/api/formularios/reportes', function (Request $request, Response $re
         ["integer", "integer"],                                                                 //rehabilitacion_pozo
         ["string", "integer", "integer", "integer", "string" , "integer", "integer"],           //fugas
         ["string", "integer", "integer", "integer", "string" , "integer", "integer", "integer"],//tomas_ilegales
-        ["integer", "integer", "integer", "integer", "integer"],                                //reparaciones_brippas
+        ["integer", "integer", "integer", "integer", "integer", "integer"],                      //reparaciones_brippas
         ["integer", "integer", "integer", "integer", "integer" , "integer"],                    //afectaciones
         ["integer", "integer", "integer", "string"],                                            //operatividad_abastecimiento
         ["string", "integer", "integer", "integer", "integer", "integer", "string", "integer"], //pozo
