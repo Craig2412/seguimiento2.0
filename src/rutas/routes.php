@@ -577,58 +577,62 @@ $app->get('/api/desplegables/estados[/{id}]', function (Request $request, Respon
 
     $app->get('/api/reportes/dia', function (Request $request, Response $response) {
 
-    $esta = [
-        ["Amazonas" => []],
-        ["ANZOATEGUI" => []],
-        ["APURE" => []],
-        ["ARAGUA" => []],
-        ["BARINAS" => []],
-        ["BOLIVAR" => []],
-        ["CARABOBO" => []],
-        ["COJEDES" => []],
-        ["DELTA AMACURO" => []],
-        ["FALCON" => []],
-        ["GUARICO" => []],
-        ["LARA" => []],
-        ["MERIDA" => []],
-        ["MIRANDA" => []],
-        ["MONAGAS" => []],
-        ["NUEVA ESPARTA" => []],
-        ["PORTUGUESA" => []],
-        ["SUCRE" => []],
-        ["TACHIRA" => []],
-        ["TRUJILLO" => []],
-        ["VARGAS" => []], 
-        ["YARACUY" => []],
-        ["ZULIA" => []],
-        ["DISTRITO CAPITAL" => []]
-    ];
-
-    $sql = "SELECT reporte.*, tablas.tipo_reporte
-    FROM `reporte`
-    LEFT JOIN tablas ON reporte.id_tabla = tablas.id
-    WHERE reporte.fecha = CURDATE()";
-
-    $db = New DB();
-    $resultado = $resultado = $db->consultaAll('mapa', $sql);
-    if (count($resultado) > 0) {
-        
-        //var_dump($resultado[0]);
-        //array_push($esta[0]["Amazonas"][], $_SESSION["TypeConsult"][$resultado[0]["id_tabla"]]);
-        $_SESSION['Estados Asociativos'][2]["PRODUCCION"] = 1000;
-        var_dump($_SESSION['Estados Asociativos']);
-        
-       // var_dump($esta);
-    }
-
+        $esta = [
+            ["Amazonas" => []],
+            ["Anzoátegui" => []],
+            ["Apure" => []],
+            ["Aragua" => []],
+            ["Barinas" => []],
+            ["Bolívar" => []],
+            ["Carabobo" => []],
+            ["Cojedes" => []],
+            ["Delta Amacuro" => []],
+            ["Falcón" => []],
+            ["Guárico" => []],
+            ["Lara" => []],
+            ["Mérida" => []],
+            ["Miranda" => []],
+            ["Monagas" => []],
+            ["Nueva Esparta" => []],
+            ["Portuguesa" => []],
+            ["Sucre" => []],
+            ["Táchira" => []],
+            ["Trujillo" => []],
+            ["Vargas" => []], 
+            ["Yaracuy" => []],
+            ["Zulia" => []],
+            ["Distrito Capital" => []]
+        ];
     
-
-
-        
-        
+        //$esta[0]["ANZOATEGUI"]["produccion"] = 1000;
+    //    var_dump($esta);
+    
+        $sql = "SELECT reporte.*, tablas.tipo_reporte, estados.estado
+        FROM `reporte`
+        LEFT JOIN tablas ON reporte.id_tabla = tablas.id
+        LEFT JOIN estados ON reporte.id_estado = estados.id_estado
+        WHERE reporte.fecha = CURDATE()";
+    
+        $db = New DB();
+        $ConsultResult = $db->consultaAll('mapa', $sql);
+        if (count($ConsultResult) > 0) {
+    
+            for ($i=0; $i < count($ConsultResult) ; $i++) { 
+                $state_id = $ConsultResult[$i]['id_estado'] -1;
+                $name_state = $ConsultResult[$i]['estado'];
+                $Type_report_set = $ConsultResult[$i]['tipo_reporte'];
+    
+                $esta[$state_id][$name_state][$Type_report_set] = "REPORTADO";
+            }
             
-    });
-     
+          
+            var_dump($esta);
+        }else {
+            return validarDatosReturn($esta, $response);
+        }
+    
+           
+        });
           
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////      
@@ -1357,7 +1361,7 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         case 'tomas_ilegales':
 
-            $sql = "SELECT COUNT(tomas_ilegales.id) AS total,reporte.fecha, reporte.id_estado, estados.estado
+            $sql = "SELECT SUM(tomas_ilegales.cantidad_tomas_eliminadas) AS total,reporte.fecha, reporte.id_estado, estados.estado
             FROM tomas_ilegales 
                 LEFT JOIN `reporte` ON tomas_ilegales.`id_reporte` = reporte.id
                 LEFT JOIN `estados` ON `reporte`.`id_estado` = estados.id_estado 
@@ -1381,7 +1385,7 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         case 'fugas':
 
-            $sql = "SELECT COUNT(fugas.id) AS total,reporte.fecha, reporte.id_estado, estados.estado
+            $sql = "SELECT SUM(fugas.cantidad_fugas_reparadas) AS total,reporte.fecha, reporte.id_estado, estados.estado
             FROM fugas 
                 LEFT JOIN `reporte` ON fugas.`id_reporte` = reporte.id
                 LEFT JOIN `estados` ON `reporte`.`id_estado` = estados.id_estado 
