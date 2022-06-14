@@ -1384,9 +1384,9 @@ $app->post('/api/formularios/reportes', function (Request $request, Response $re
     $tablasInsertar=[
     ['`metros_cubicos`', '`id_estado`', '`id_reporte`'],
     ['`lps`', '`id_pozo`', '`id_reporte`'],
-    ['`nombre_aduccion`', '`id_estado`', '`id_municipio`', '`id_parroquia`', '`sector`' , '`cantidad_fugas_reparadas`','`id_reporte`', '`lps_recuperados`'],
-    ['`nombre_aduccion`', '`id_estado`', '`id_municipio`', '`id_parroquia`', '`sector`' , '`cantidad_tomas_eliminadas`', '`lps`', '`id_reporte`', '`lps_recuperados`'],
-    ['`averias_levantadas_ap`', '`averias_levantadas_ap`', '`averias_levantadas_as`', '`averias_corregidas_as`', '`id_brippas`' , '`id_reporte`'],
+    ['`nombre_aduccion`', '`id_estado`', '`id_municipio`', '`id_parroquia`', '`sector`' , '`cantidad_fugas_reparadas`', '`lps_recuperados`','`id_reporte`'],
+    ['`nombre_aduccion`', '`id_estado`', '`id_municipio`', '`id_parroquia`', '`sector`' , '`cantidad_tomas_eliminadas`', '`lps_recuperados`', '`id_reporte`'],
+    ['`averias_levantadas_ap`', '`averias_corregidas_ap`', '`averias_levantadas_as`', '`averias_corregidas_as`', '`id_brippas`' , '`id_reporte`'],
     ['`id_estado`', '`cantidad`', '`horas_sin_servicio`', '`equipos_danados`', '`id_infraestructura`' , '`id_sistema`', '`id_reporte`'],
     ['`id_estado`', '`porcentaje_operatividad`', '`porcentaje_abastecimiento`', '`observacion`', '`id_reporte`'],
     ['`nombre`', '`operatividad`', '`lps`', '`id_estado`', '`id_municipio`', '`id_parroquia`', '`sector`', '`poblacion`'],
@@ -1399,7 +1399,7 @@ $app->post('/api/formularios/reportes', function (Request $request, Response $re
         ["integer", "integer"],                                                                 //produccion
         ["integer", "integer"],                                                                 //rehabilitacion_pozo
         ["string", "integer", "integer", "integer", "string" , "integer", "integer"],           //fugas
-        ["string", "integer", "integer", "integer", "string" , "integer", "integer", "integer"],//tomas_ilegales
+        ["string", "integer", "integer", "integer", "string" , "integer", "integer"],           //tomas_ilegales
         ["integer", "integer", "integer", "integer", "integer"],                                //reparaciones_brippas
         ["integer", "integer", "integer", "integer", "integer" , "integer"],                    //afectaciones
         ["integer", "integer", "integer", "string"],                                            //operatividad_abastecimiento
@@ -1444,7 +1444,6 @@ $app->post('/api/formularios/reportes', function (Request $request, Response $re
             $db = new DB();
 
             $stmt = $db->consultaAll('mapa', $sqlreporte, [$body->{'valores_insertar'}[0], $body->{'valores_insertar'}[1],$body->{'tipo_formulario'}, $body->{'id_estado'},1]);
-            
             if ($stmt) {
                 array_push($values,$stmt->{'insert_id'});
                 $stmt2 = $db->consultaAll('mapa', $sqlFormulario, $values);
