@@ -538,7 +538,7 @@ $app->get('/api/desplegables/estados[/{id}]', function (Request $request, Respon
                     FROM `brippas` 
                     LEFT JOIN `estados` ON `brippas`.`id_estado` = `estados`.`id_estado` 
                     LEFT JOIN `municipios` ON `brippas`.`id_municipio` = `municipios`.`id_municipio` 
-                    LEFT JOIN `parroquias` ON `brippas`.`id_parroquia` = `parroquias`.`id_parroquia`;";
+                    LEFT JOIN `parroquias` ON `brippas`.`id_parroquia` = `parroquias`.`id_parroquia`";
             $resultado = $db->consultaAll('mapa',$sql);
 
         }
@@ -549,38 +549,77 @@ $app->get('/api/desplegables/estados[/{id}]', function (Request $request, Respon
     });
 
 
-    $app->get('/api/desplegables/sistemas', function (Request $request, Response $response) {
+    $app->get('/api/desplegables/sistemas[/{id_estado}]', function (Request $request, Response $response) {
                 
-        $sql = "SELECT * FROM `sistemas`";
-                    $db = New DB();
+        if ($request->getAttribute('id_estado')) {
+           
+            $id = $request->getAttribute('id_estado');
+        }
+        $db = New DB();
 
+        if (isset($id)) {
+            $sql = "SELECT sistemas.*, `estados`.`estado`
+            FROM `sistemas`
+            LEFT JOIN `estados` ON `sistemas`.`id_estado` = `estados`.`id_estado` 
+                    WHERE `estados`.`id_estado` = ?";
+            $resultado = $db->consultaAll('mapa',$sql,[$id]);
+        }else {
+            $sql = "SELECT sistemas.*, `estados`.`estado`
+            FROM `sistemas`
+            LEFT JOIN `estados` ON `sistemas`.`id_estado` = `estados`.`id_estado` ";
             $resultado = $db->consultaAll('mapa',$sql);
-                    
 
-            return validarDatosReturn($resultado, $response);
-        
+        }
+        return validarDatosReturn($resultado, $response);        
     });
 
 
 
     $app->get('/api/reportes/dia', function (Request $request, Response $response) {
 
-        $TablaConsultar = $_SESSION['TypeConsult'];
+    $esta = [
+        ["Amazonas" => []],
+        ["ANZOATEGUI" => []],
+        ["APURE" => []],
+        ["ARAGUA" => []],
+        ["BARINAS" => []],
+        ["BOLIVAR" => []],
+        ["CARABOBO" => []],
+        ["COJEDES" => []],
+        ["DELTA AMACURO" => []],
+        ["FALCON" => []],
+        ["GUARICO" => []],
+        ["LARA" => []],
+        ["MERIDA" => []],
+        ["MIRANDA" => []],
+        ["MONAGAS" => []],
+        ["NUEVA ESPARTA" => []],
+        ["PORTUGUESA" => []],
+        ["SUCRE" => []],
+        ["TACHIRA" => []],
+        ["TRUJILLO" => []],
+        ["VARGAS" => []], 
+        ["YARACUY" => []],
+        ["ZULIA" => []],
+        ["DISTRITO CAPITAL" => []]
+    ];
+
+    $sql = "SELECT reporte.*
+    FROM `reporte`
+    WHERE reporte.fecha = CURDATE()";
 
 
-        $db = New DB();
-        $sql = "SELECT reporte.* FROM `reporte` WHERE TO_DAYS(reporte.fecha) = TO_DAYS(NOW())";
-        $resultado= $db->consultaAll('mapa',$sql);
+    $db = New DB();
 
-        $array = $_SESSION['Estados'];
+    //var_dump($_SESSION['Estados Asociativos'][1]);
+ $resultado = $resultado = $db->consultaAll('mapa', $sql);
+    //var_dump($resultado[0]);
+    array_push($esta[0]["Amazonas"], $_SESSION["TypeConsult"][$resultado[0]["id_tabla"]]);
+     
+    var_dump($esta);
+    
 
 
-        for ($i=0; $i < count($resultado); $i++) { 
-           array_push($array[$resultado[$i]["id_estado"] - 1], $TablaConsultar[$resultado[$i]["id_tabla"] +0]);
-        }
-
-
-       return json_encode($array);
         
         
             
@@ -1398,9 +1437,9 @@ $app->post('/api/formularios/reportes', function (Request $request, Response $re
     $tablasInsertar=[
     ['`metros_cubicos`', '`id_estado`', '`id_reporte`'],
     ['`lps`', '`id_pozo`', '`id_reporte`'],
-    ['`nombre_aduccion`', '`id_estado`', '`id_municipio`', '`id_parroquia`', '`sector`' , '`cantidad_fugas_reparadas`', '`lps_recuperados`','`id_reporte`'],
-    ['`nombre_aduccion`', '`id_estado`', '`id_municipio`', '`id_parroquia`', '`sector`' , '`cantidad_tomas_eliminadas`', '`lps_recuperados`', '`id_reporte`'],
-    ['`averias_levantadas_ap`', '`averias_corregidas_ap`', '`averias_levantadas_as`', '`averias_corregidas_as`', '`id_brippas`' , '`id_reporte`'],
+    ['`nombre_aduccion`', '`id_estado`', '`id_municipio`', '`id_parroquia`', '`sector`' , '`cantidad_fugas_reparadas`','`id_reporte`', '`lps_recuperados`'],
+    ['`nombre_aduccion`', '`id_estado`', '`id_municipio`', '`id_parroquia`', '`sector`' , '`cantidad_tomas_eliminadas`', '`lps`', '`id_reporte`', '`lps_recuperados`'],
+    ['`averias_levantadas_ap`', '`averias_levantadas_ap`', '`averias_levantadas_as`', '`averias_corregidas_as`', '`id_brippas`' , '`id_reporte`'],
     ['`id_estado`', '`cantidad`', '`horas_sin_servicio`', '`equipos_danados`', '`id_infraestructura`' , '`id_sistema`', '`id_reporte`'],
     ['`id_estado`', '`porcentaje_operatividad`', '`porcentaje_abastecimiento`', '`observacion`', '`id_reporte`'],
     ['`nombre`', '`operatividad`', '`lps`', '`id_estado`', '`id_municipio`', '`id_parroquia`', '`sector`', '`poblacion`'],
@@ -1413,7 +1452,7 @@ $app->post('/api/formularios/reportes', function (Request $request, Response $re
         ["integer", "integer"],                                                                 //produccion
         ["integer", "integer"],                                                                 //rehabilitacion_pozo
         ["string", "integer", "integer", "integer", "string" , "integer", "integer"],           //fugas
-        ["string", "integer", "integer", "integer", "string" , "integer", "integer"],           //tomas_ilegales
+        ["string", "integer", "integer", "integer", "string" , "integer", "integer", "integer"],//tomas_ilegales
         ["integer", "integer", "integer", "integer", "integer"],                                //reparaciones_brippas
         ["integer", "integer", "integer", "integer", "integer" , "integer"],                    //afectaciones
         ["integer", "integer", "integer", "string"],                                            //operatividad_abastecimiento
@@ -1458,6 +1497,7 @@ $app->post('/api/formularios/reportes', function (Request $request, Response $re
             $db = new DB();
 
             $stmt = $db->consultaAll('mapa', $sqlreporte, [$body->{'valores_insertar'}[0], $body->{'valores_insertar'}[1],$body->{'tipo_formulario'}, $body->{'id_estado'},1]);
+            
             if ($stmt) {
                 array_push($values,$stmt->{'insert_id'});
                 $stmt2 = $db->consultaAll('mapa', $sqlFormulario, $values);
