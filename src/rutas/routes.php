@@ -614,9 +614,9 @@ $app->get('/api/desplegables/estados[/{id}]', function (Request $request, Respon
     if (count($resultado) > 0) {
         
         //var_dump($resultado[0]);
-        //array_push($esta[0]["Amazonas"], $_SESSION["TypeConsult"][$resultado[0]["id_tabla"]]);
-        $_SESSION['Estados Asociativos'][0]["PRODUCCION"] = 1000;
-        var_dump($_SESSION['Estados Asociativos'][0]);
+        //array_push($esta[0]["Amazonas"][], $_SESSION["TypeConsult"][$resultado[0]["id_tabla"]]);
+        $_SESSION['Estados Asociativos'][2]["PRODUCCION"] = 1000;
+        var_dump($_SESSION['Estados Asociativos']);
         
        // var_dump($esta);
     }
@@ -1284,7 +1284,6 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
      //FECHA INICIAL  
      //FECHA FINAL 
      //EL TIPO DE CONSULTA => 1 , 2 , 3 , 6 
-
      $array= $_SESSION['Estados'];
      
     if (!empty($args['params'])) {
@@ -1325,6 +1324,8 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
                 $array[$estado][1] = $PozosRehabilitados[$i]["total"];
             }
         }
+
+        $array= [["State", "Latitudes"], ...$array];
         return validarDatosReturn($array, $response);                 
 
         break;
@@ -1349,6 +1350,7 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
             }
         }
 
+        $array= [["State", "Latitudes"], ...$array];
         return validarDatosReturn($array, $response);                 
 
         break;
@@ -1372,6 +1374,7 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
             }
         }
 
+        $array= [["State", "Latitudes"], ...$array];
         return validarDatosReturn($array, $response); 
 
         break;        
@@ -1394,11 +1397,15 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
                 $array[$estado][1] = $fugas_reparadas[$i]["total"];
             }
         }
+
+        $array= [["State", "Latitudes"], ...$array];
         return validarDatosReturn($array, $response);                 
 
         break;        
 
         default:
+
+        $array= [["State", "Latitudes"], ...$array];
         return validarDatosReturn($array, $response);                 
         
             break;
