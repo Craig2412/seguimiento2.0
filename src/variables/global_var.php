@@ -59,3 +59,30 @@ $_SESSION['Estados'] = [
     ["ZULIA",0],
     ["DISTRITO CAPITAL",0]
 ];
+
+$_SESSION['EstadosMapa'] = [
+    ["VE-X",0],
+    ["VE-B",0],
+    ["VE-C",0],
+    ["VE-D",0],
+    ["VE-E",0],
+    ["VE-F",0],
+    ["VE-G",0],
+    ["VE-H",0],
+    ["VE-Y",0],
+    ["VE-I",0],
+    ["VE-J",0],
+    ["VE-K",0],
+    ["VE-L",0],
+    ["VE-M",0],
+    ["VE-N",0],
+    ["VE-O",0],
+    ["VE-P",0],
+    ["VE-R",0],
+    ["VE-S",0],
+    ["VE-T",0],
+    ["VE-W",0], 
+    ["VE-U",0],
+    ["VE-V",0],
+    ["VE-A",0]
+];

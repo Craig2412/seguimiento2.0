@@ -1284,7 +1284,7 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
      //FECHA INICIAL  
      //FECHA FINAL 
      //EL TIPO DE CONSULTA => 1 , 2 , 3 , 6 
-     $array= $_SESSION['Estados'];
+     $array= $_SESSION['EstadosMapa'];
      
     if (!empty($args['params'])) {
         $params = EliminarBarrasURL($args['params']);
@@ -1325,7 +1325,7 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
             }
         }
 
-        $array= [["State", "Latitudes"], ...$array];
+        $array= [["State", "Latitude"], ...$array];
         return validarDatosReturn($array, $response);                 
 
         break;
@@ -1350,7 +1350,7 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
             }
         }
 
-        $array= [["State", "Latitudes"], ...$array];
+        $array= [["State", "Latitude"], ...$array];
         return validarDatosReturn($array, $response);                 
 
         break;
@@ -1374,7 +1374,7 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
             }
         }
 
-        $array= [["State", "Latitudes"], ...$array];
+        $array= [["State", "Latitude"], ...$array];
         return validarDatosReturn($array, $response); 
 
         break;        
@@ -1398,14 +1398,14 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
             }
         }
 
-        $array= [["State", "Latitudes"], ...$array];
+        $array= [["State", "Latitude"], ...$array];
         return validarDatosReturn($array, $response);                 
 
         break;        
 
         default:
 
-        $array= [["State", "Latitudes"], ...$array];
+        $array= [["State", "Latitude"], ...$array];
         return validarDatosReturn($array, $response);                 
         
             break;
