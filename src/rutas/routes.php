@@ -1240,8 +1240,13 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
      //ENVIAR OBLIGATORIAMENTE 
      //FECHA INICIAL  
      //FECHA FINAL 
-     //EL TIPO DE CONSULTA => 'pozos_rehabilitados'
+     //EL TIPO DE CONSULTA => 1 , 2 , 3 , 6 
 
+
+
+
+
+     
      $array= $_SESSION['Estados'];
      
 if (!empty($args['params'])) {
@@ -1253,11 +1258,20 @@ if (!empty($args['params'])) {
 }
 
 if (isset($params[0]) AND isset($params[1])) {
+    
+    if (isset($params[2])) {
+        if (($params[2] != 2) && ($params[2] != 1) && ($params[2] != 3) && ($params[2] != 6)) {
+        $array = [];
+        return validarDatosReturn($array, $response);
+        }
+     }
+
     $db = New DB();
 
-    switch ($params[2]) {
+
+    switch ($_SESSION["TypeConsult"][$params[2]]) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        case 'pozos_rehabilitados':
+        case 'rehabilitacion_pozo':
 
             $sql = "SELECT COUNT(rehabilitacion_pozo.id) as total,reporte.fecha, reporte.id_estado, estados.estado
             FROM rehabilitacion_pozo 
@@ -1302,7 +1316,7 @@ if (isset($params[0]) AND isset($params[1])) {
 
         break;
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        case 'tomas_eliminadas':
+        case 'tomas_ilegales':
 
             $sql = "SELECT COUNT(tomas_ilegales.id) AS total,reporte.fecha, reporte.id_estado, estados.estado
             FROM tomas_ilegales 
@@ -1325,7 +1339,7 @@ if (isset($params[0]) AND isset($params[1])) {
 
         break;        
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        case 'fugas_reparadas':
+        case 'fugas':
 
             $sql = "SELECT COUNT(fugas.id) AS total,reporte.fecha, reporte.id_estado, estados.estado
             FROM fugas 
