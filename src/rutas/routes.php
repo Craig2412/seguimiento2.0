@@ -253,7 +253,8 @@ if (!empty($args['params'])) {
             LEFT JOIN `tablas` ON `reporte`.`id_tabla` = `tablas`.`id` 
             LEFT JOIN `estados` ON `reporte`.`id_estado` = `estados`.`id_estado` 
             WHERE reporte.id_estado = ? AND reporte.id_tabla = ?
-            LIMIT $inicio , $regPagina";
+            ORDER BY reporte.id DESC
+            LIMIT $inicio , $regPagina ";
             $resultado = $db->consultaAll('mapa',$sql2, [$params[0], $params[1]]);
         }else{
             $sql2 = "SELECT SQL_CALC_FOUND_ROWS  reporte.* , estados.estado, tablas.tipo_reporte 
@@ -261,7 +262,8 @@ if (!empty($args['params'])) {
             LEFT JOIN `tablas` ON `reporte`.`id_tabla` = `tablas`.`id` 
             LEFT JOIN `estados` ON `reporte`.`id_estado` = `estados`.`id_estado` 
             WHERE reporte.id_tabla = ?
-            LIMIT $inicio , $regPagina";
+            ORDER BY reporte.id DESC
+            LIMIT $inicio , $regPagina ";
             $resultado = $db->consultaAll('mapa',$sql2, [$params[1]]);
         }
         
@@ -272,6 +274,7 @@ if (!empty($args['params'])) {
         FROM reporte 
         LEFT JOIN `tablas` ON `reporte`.`id_tabla` = `tablas`.`id` 
         LEFT JOIN `estados` ON `reporte`.`id_estado` = `estados`.`id_estado` 
+        ORDER BY reporte.id DESC
         LIMIT $inicio , $regPagina";
         $resultado = $db->consultaAll('mapa',$sql2);
     }
