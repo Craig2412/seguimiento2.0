@@ -13,6 +13,13 @@ require __DIR__ . '/../class/classRegistros.php';
 require __DIR__ . '/../class/classPaginador.php';
 require __DIR__ . '/../config/db.php';
 require __DIR__ . '/../variables/global_var.php';
+require __DIR__ . '/../../vendor/autoload.php';
+
+
+use PhpOffice\PhpSpreadsheet\IOFactory;
+
+
+$_SESSION['documento'] = IOFactory::load('../prueba3.xlsx');
 
 $app->add(Tuupola());
 
@@ -992,7 +999,25 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
 
     
     $app->get('/api/dashboard/ultimos_reportes', function (Request $request, Response $response) {
-                
+        
+        $hoja_actual= $_SESSION['documento']->getSheet(0);
+        $filas = $hoja_actual->getHighestDataRow();
+        $letra =$hoja_actual->getHighestColumn();
+        $array = [1,2];
+        
+        for ($i=0; $i < $filas; $i++) { 
+            $valor = $hoja_actual->getCellByColumnAndRow(2,$i);
+            //array_push($array, $valor);
+            var_dump($valor);
+        }
+        
+    //var_dump($array);
+
+
+
+
+
+        /*        
         $sql = "SELECT `reporte`.*, tablas.tipo_reporte
         FROM `reporte`
         LEFT JOIN tablas ON reporte.id_tabla = tablas.id
@@ -1002,7 +1027,7 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
         $ultimos_reportes = $db->consultaAll('mapa',$sql);
         $values = array_slice($ultimos_reportes,-5);
 
-        return validarDatosReturn($values, $response);
+        return validarDatosReturn($values, $response);*/
     });
 
 
