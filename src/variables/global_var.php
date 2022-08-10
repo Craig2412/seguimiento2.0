@@ -61,7 +61,7 @@ $_SESSION['Estados'] = [
 ];
 
 $_SESSION['EstadosMapa'] = [
-    ["VE-X",0],
+    ["VE-Z",0],
     ["VE-B",0],
     ["VE-C",0],
     ["VE-D",0],
@@ -81,7 +81,7 @@ $_SESSION['EstadosMapa'] = [
     ["VE-R",0],
     ["VE-S",0],
     ["VE-T",0],
-    ["VE-W",0], 
+    ["VE-X",0], 
     ["VE-U",0],
     ["VE-V",0],
     ["VE-A",0]

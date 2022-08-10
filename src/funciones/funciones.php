@@ -250,6 +250,12 @@ if (isset($tipoValidacion) && is_numeric($tipoValidacion) && (gettype($datosVali
 }
 }
 
+function enviarCods($cod, $alert, $info, $array , $response= null) { 
+
+    return  $response->withJson($array, $cod)
+                    ->withHeader('Cod', $alert)
+                    ->withHeader('Information', $info);
+}
 
 function validarDatosReturn($returnValidar, $response= null) { 
 
@@ -266,10 +272,9 @@ function validarDatosReturn($returnValidar, $response= null) {
                         ->withHeader('Cod', 'success')
                         ->withHeader('Information', 'SE COMPLETO CON EXITO LA PETICION');
     }
-    
-    
-
 }
+
+
 
 
 

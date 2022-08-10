@@ -10,6 +10,7 @@
         "tuupola/slim-jwt-auth": "^3.5",
         "vlucas/phpdotenv": "^5.2",
         "cboden/ratchet": "^0.4.3",
-        "monolog/monolog": "^1.26"
+        "monolog/monolog": "^1.26",
+        "phpoffice/phpspreadsheet": "^1.24"
     }
 }
