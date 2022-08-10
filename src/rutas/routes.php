@@ -13,20 +13,6 @@ require __DIR__ . '/../class/classRegistros.php';
 require __DIR__ . '/../class/classPaginador.php';
 require __DIR__ . '/../config/db.php';
 require __DIR__ . '/../variables/global_var.php';
-require __DIR__ . '/../../vendor/autoload.php';
-
-
-use PhpOffice\PhpSpreadsheet\IOFactory;
-use PhpOffice\PhpSpreadsheet\Shared\Date;
-
-
-
-$_SESSION['documento'] = IOFactory::load('../PozosRehab.xlsx');
-$_SESSION['documento_fugas'] = IOFactory::load('../fugasReparadas.xlsx');
-$_SESSION['documento_tomas_ilegales'] = IOFactory::load('../tomasIlegales.xlsx');
-$_SESSION['operatividad_abastecimiento'] = IOFactory::load('../operatividadAbastecimiento.xlsx');
-$_SESSION['brippas'] = IOFactory::load('../brippas.xlsx');
-
 
 $app->add(Tuupola());
 
@@ -825,7 +811,8 @@ if (!empty($args['params'])) {
             LEFT JOIN `tablas` ON `reporte`.`id_tabla` = `tablas`.`id` 
             LEFT JOIN `estados` ON `reporte`.`id_estado` = `estados`.`id_estado` 
             WHERE reporte.id_estado = ? AND reporte.id_tabla = ?
-            LIMIT $inicio , $regPagina";
+            ORDER BY reporte.id DESC
+            LIMIT $inicio , $regPagina ";
             $resultado = $db->consultaAll('mapa',$sql2, [$params[0], $params[1]]);
         }else{
             $sql2 = "SELECT SQL_CALC_FOUND_ROWS  reporte.* , estados.estado, tablas.tipo_reporte 
@@ -833,7 +820,8 @@ if (!empty($args['params'])) {
             LEFT JOIN `tablas` ON `reporte`.`id_tabla` = `tablas`.`id` 
             LEFT JOIN `estados` ON `reporte`.`id_estado` = `estados`.`id_estado` 
             WHERE reporte.id_tabla = ?
-            LIMIT $inicio , $regPagina";
+            ORDER BY reporte.id DESC
+            LIMIT $inicio , $regPagina ";
             $resultado = $db->consultaAll('mapa',$sql2, [$params[1]]);
         }
         
@@ -844,6 +832,7 @@ if (!empty($args['params'])) {
         FROM reporte 
         LEFT JOIN `tablas` ON `reporte`.`id_tabla` = `tablas`.`id` 
         LEFT JOIN `estados` ON `reporte`.`id_estado` = `estados`.`id_estado` 
+        ORDER BY reporte.id DESC
         LIMIT $inicio , $regPagina";
         $resultado = $db->consultaAll('mapa',$sql2);
     }
@@ -1149,7 +1138,7 @@ $app->get('/api/desplegables/estados[/{id}]', function (Request $request, Respon
 
     $app->get('/api/reportes/dia', function (Request $request, Response $response) {
 
-        $esta = [
+        $estados_asociativos = [
             ["Amazonas" => []],
             ["Anzoátegui" => []],
             ["Apure" => []],
@@ -1175,10 +1164,7 @@ $app->get('/api/desplegables/estados[/{id}]', function (Request $request, Respon
             ["Zulia" => []],
             ["Distrito Capital" => []]
         ];
-    
-        //$esta[0]["ANZOATEGUI"]["produccion"] = 1000;
-    //    var_dump($esta);
-    
+        
         $sql = "SELECT reporte.*, tablas.tipo_reporte, estados.estado
         FROM `reporte`
         LEFT JOIN tablas ON reporte.id_tabla = tablas.id
@@ -1196,12 +1182,13 @@ $app->get('/api/desplegables/estados[/{id}]', function (Request $request, Respon
     
                 $esta[$state_id][$name_state][$Type_report_set] = "REPORTADO";
             }
+            
+          
+            var_dump($esta);
         }else {
-            return validarDatosReturn($esta, $response);
-        }
-    
-           
-        });
+            return validarDatosReturn($estados_asociativos, $response);
+        }           
+    });
           
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////      
@@ -1562,7 +1549,25 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
 
     
     $app->get('/api/dashboard/ultimos_reportes', function (Request $request, Response $response) {
-                
+        
+        $hoja_actual= $_SESSION['documento']->getSheet(0);
+        $filas = $hoja_actual->getHighestDataRow();
+        $letra =$hoja_actual->getHighestColumn();
+        $array = [1,2];
+        
+        for ($i=0; $i < $filas; $i++) { 
+            $valor = $hoja_actual->getCellByColumnAndRow(2,$i);
+            //array_push($array, $valor);
+            var_dump($valor);
+        }
+        
+    //var_dump($array);
+
+
+
+
+
+        /*        
         $sql = "SELECT `reporte`.*, tablas.tipo_reporte
         FROM `reporte`
         LEFT JOIN tablas ON reporte.id_tabla = tablas.id
@@ -1572,7 +1577,7 @@ $app->get('/api/reportes/fecha[/{params:.*}]', function (Request $request, Respo
         $ultimos_reportes = $db->consultaAll('mapa',$sql);
         $values = array_slice($ultimos_reportes,-5);
 
-        return validarDatosReturn($values, $response);
+        return validarDatosReturn($values, $response);*/
     });
 
 
