@@ -250,6 +250,12 @@ if (isset($tipoValidacion) && is_numeric($tipoValidacion) && (gettype($datosVali
 }
 }
 
+function enviarCods($cod, $alert, $info, $array , $response= null) { 
+
+    return  $response->withJson($array, $cod)
+                    ->withHeader('Cod', $alert)
+                    ->withHeader('Information', $info);
+}
 
 function validarDatosReturn($returnValidar, $response= null) { 
 
@@ -266,10 +272,19 @@ function validarDatosReturn($returnValidar, $response= null) {
                         ->withHeader('Cod', 'success')
                         ->withHeader('Information', 'SE COMPLETO CON EXITO LA PETICION');
     }
-    
-    
-
 }
+
+function validarReporteDia($id_estado, $id_tipo_formulario, $fecha){#VALIDA QUE EN EL DIA SOLO SE HAYA HECHO UN REPORTE POR ESTADO AL DIA
+  
+    $db =  $db = new DB();
+    $sql = "SELECT `reporte`.* FROM `reporte` WHERE reporte.id_estado = ? AND reporte.id_tabla = ? AND reporte.fecha = ?";
+    $consulta = $db->consultaAll('mapa', $sql, [$id_estado, $id_tipo_formulario, $fecha]);
+    
+    if (count($consulta) === 0) {
+        return 'OK';
+    }
+}
+
 
 
 

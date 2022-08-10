@@ -1521,6 +1521,10 @@ $app->post('/api/formularios/reportes', function (Request $request, Response $re
             if ($validacion !== 'OK') {
                 return  $validacion;
             }
+            
+            if (validarReporteDia( $body->{'id_estado'}, $body->{'tipo_formulario'}, $body->{'valores_insertar'}[1]) !== 'OK') {
+                return enviarCods(200, 'warning', 'YA SE HA HECHO UN REPORTE EL DIA DE HOY', [] , $response);
+            }
     
             $db = new DB();
 
@@ -1696,3 +1700,561 @@ $app->put('/api/actualizacion/revision', function (Request $request, Response $r
         $e->getMessage();
     }
 });
+
+
+
+
+$app->get('/api/pruebas/jwt', function (Request $request, Response $response) {
+    $token=$request->getAttribute('jwt')['data'];
+    return json_encode($token);
+    
+
+});
+
+//////////////////////////////////////////////////////MIGRACION/////////////////////////////////////////
+
+$app->get('/api/ecxelBrippas', function (Request $request, Response $response) {
+             
+    //POZOS
+    $hoja_actual= $_SESSION['brippas']->getSheet(0);
+    $filas = $hoja_actual->getHighestDataRow();
+    $letra =$hoja_actual->getHighestColumn();
+    $cont = null;
+    //var_dump($hoja_actual);
+
+    $db = New DB();
+    $sql_nombre_brippas = "SELECT * FROM brippas";
+    $nombre_brippas = $db->consultaAll('mapa',$sql_nombre_brippas);
+
+    for ($i=1; $i <= $filas; $i++) { //aca obtengo cada dato de cada columna que necesite
+        $Columna_estado = $hoja_actual->getCellByColumnAndRow(1,$i);
+        $Columna_municipios = strval($hoja_actual->getCellByColumnAndRow(2,$i));
+        $Columna_parroquia = strval($hoja_actual->getCellByColumnAndRow(3,$i));
+        $Nombre_brippas = strval($hoja_actual->getCellByColumnAndRow(4,$i));
+        $Integrantes =$hoja_actual->getCellByColumnAndRow(5,$i);
+        $dotacion = $hoja_actual->getCellByColumnAndRow(6,$i);
+        $formacion = $hoja_actual->getCellByColumnAndRow(7,$i);
+        //fecha
+        $celda = ('A'.$i);
+        $value_fechas = $hoja_actual->getCell('A'.$i)->getValue();
+        $objeto_fechas = PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($value_fechas)->format('Y-m-d');
+        $fecha = $objeto_fechas;
+        //fecha
+        
+        $sql_estados = "SELECT * FROM estados WHERE id_estado = $Columna_estado";       
+        $estados = $db->consultaAll('mapa',$sql_estados);
+        $estados = $estados[0]['estado'];
+        $valor_borrar = null;
+//NOMBRE BRIPPAS
+        for ($y=0; $y < count($nombre_brippas); $y++) { //aca valido que no exista el pozo
+        
+            
+            if (strtoupper($nombre_brippas[$y]['nombre']) == $Nombre_brippas) {
+                $valor_borrar=$i;                                       
+            }                                            
+        }   
+        if ($valor_borrar === $i) {
+            $valor_nombre = "BORRAR";
+            $NombrePozo =  $valor_nombre;                             
+
+        }else {                   
+            $valor_nombre = strval($Nombre_brippas);
+            $NombrePozo =  $valor_nombre;                             
+        }        
+//NOMBRE BRIPPAS
+
+//ID MUNICIPIO                   
+        $sql_municipios = "SELECT * FROM municipios WHERE municipios.id_estado = $Columna_estado";
+        $municipios = $db->consultaAll('mapa',$sql_municipios);
+
+for ($l=0; $l < count($municipios); $l++) { //aca recorro la consulta para asignarle id a los nombre que necesito en el municipio
+
+            if (strtoupper($municipios[$l]['municipio']) == $Columna_municipios) {                 
+               $Municipio = $municipios[$l]['id_municipio'];
+            } 
+        }
+        if (!isset($Municipio)) {
+            return "error en el Reporte (municipio)".$i;
+        }
+//ID MUNICIPIO 
+
+//ID PARROQUIA                   
+        $sql_parroquias = "SELECT * FROM parroquias WHERE parroquias.id_municipio = $Municipio";
+        $parroquias = $db->consultaAll('mapa',$sql_parroquias);
+
+        for ($j=0; $j < count($parroquias); $j++) { //aca recorro la consulta para asignarle id a los nombre que necesito en la parroquia
+
+            if (strtoupper($parroquias[$j]['parroquia']) == $Columna_parroquia) {
+                $Parroquia = $parroquias[$j]['id_parroquia']; 
+            } 
+        }
+        if (!isset($Parroquia)) {
+            return "error en el Reporte (parroquia)".$i;
+        }           
+//ID PARROQUIA     
+
+//INYECCION DE DATOS
+        $insertar_brippas = "INSERT INTO `brippas` (`id`, `nombre`, `id_estado`, `id_municipio`, `id_parroquia`, `sector`, `cantidad_integrantes`, `dotacion`, `formacion`) 
+                             VALUES (NULL, '$Nombre_brippas', $Columna_estado, $Municipio, $Parroquia, '$estados', $Integrantes, $dotacion, $formacion);";
+            
+        $stmt_brippas = $db->consultaAll('mapa',$insertar_brippas);
+
+        if ($stmt_brippas) {      
+            
+            var_dump($i);
+        }else {
+            return "error inyeccion Pozo".$i;
+        }
+
+    }
+
+});
+
+
+
+
+///OPERATIVIDAD Y ABASTECIENTO
+$app->get('/api/ecxelOpAb', function (Request $request, Response $response) {
+             
+    $hoja_actual= $_SESSION['operatividad_abastecimiento']->getSheet(0);
+    $filas = $hoja_actual->getHighestDataRow();
+    $letra =$hoja_actual->getHighestColumn();
+    $db = New DB();
+
+    //FOR DE ENERO
+    for ($i=1; $i <= $filas; $i++) { //aca obtengo cada dato de cada columna que necesite
+        
+        $Columna_estado = $hoja_actual->getCellByColumnAndRow(1,$i);
+        $Columna_mes_datos_abastecimiento = strval($hoja_actual->getCellByColumnAndRow(2,$i));
+        $Columna_mes_datos_operatividad = strval($hoja_actual->getCellByColumnAndRow(9,$i));
+
+        $sql_estados = "SELECT * FROM estados WHERE id_estado = $Columna_estado";       
+        $estados = $db->consultaAll('mapa',$sql_estados);
+        $estados = $estados[0]['estado'];
+        $Columna_mes_datos_abastecimiento = round(($Columna_mes_datos_abastecimiento +0)*100);
+        $Columna_mes_datos_operatividad = round(($Columna_mes_datos_operatividad +0)*100);
+
+
+        //INYECCION DE DATOS
+        $sql_insertar_reporte = "INSERT INTO `reporte` (`id`, `ubicacion_reporte`, `fecha`, `id_tabla`, `id_estado`, `id_revision`) 
+        VALUES (NULL, '$estados', '2022-01-30', 3, $Columna_estado , 1)";
+        $stmt = $db->consultaAll('mapa',$sql_insertar_reporte);
+        $id_reporte = $stmt->{'insert_id'};
+
+        if ($stmt) {
+            $sql_insertar_operatividad = "INSERT INTO `operatividad_abastecimiento` (`id`, `id_estado`, `porcentaje_operatividad`, `porcentaje_abastecimiento`, `observacion`, `id_reporte`) 
+            VALUES (NULL, $Columna_estado , $Columna_mes_datos_operatividad, $Columna_mes_datos_abastecimiento , 'N/A', $id_reporte)";
+            $stmt2 = $db->consultaAll('mapa',$sql_insertar_reporte);
+
+            if ($stmt2) {
+                var_dump($i." ENERO");
+            }
+        }
+        //INYECCION DE DATOS
+    }
+
+    //FOR DE MARZO
+    for ($i=1; $i <= $filas; $i++) { //aca obtengo cada dato de cada columna que necesite
+        
+        $Columna_estado = $hoja_actual->getCellByColumnAndRow(1,$i);
+        $Columna_mes_datos_abastecimiento = strval($hoja_actual->getCellByColumnAndRow(4,$i));
+        $Columna_mes_datos_operatividad = strval($hoja_actual->getCellByColumnAndRow(11,$i));
+
+        $sql_estados = "SELECT * FROM estados WHERE id_estado = $Columna_estado";       
+        $estados = $db->consultaAll('mapa',$sql_estados);
+        $estados = $estados[0]['estado'];
+        $Columna_mes_datos_abastecimiento = round(($Columna_mes_datos_abastecimiento +0)*100);
+        $Columna_mes_datos_operatividad = round(($Columna_mes_datos_operatividad +0)*100);
+
+
+        //INYECCION DE DATOS
+        $sql_insertar_reporte = "INSERT INTO `reporte` (`id`, `ubicacion_reporte`, `fecha`, `id_tabla`, `id_estado`, `id_revision`) 
+        VALUES (NULL, '$estados', '2022-03-30', 3, $Columna_estado , 1)";
+        $stmt = $db->consultaAll('mapa',$sql_insertar_reporte);
+        $id_reporte = $stmt->{'insert_id'};
+
+        if ($stmt) {
+            $sql_insertar_operatividad = "INSERT INTO `operatividad_abastecimiento` (`id`, `id_estado`, `porcentaje_operatividad`, `porcentaje_abastecimiento`, `observacion`, `id_reporte`) 
+            VALUES (NULL, $Columna_estado , $Columna_mes_datos_operatividad, $Columna_mes_datos_abastecimiento , 'N/A', $id_reporte)";
+            $stmt2 = $db->consultaAll('mapa',$sql_insertar_reporte);
+
+            if ($stmt2) {
+                var_dump($i." MARZO");
+            }
+        }
+        //INYECCION DE DATOS
+    }
+
+    //FOR DE ABRIL
+    for ($i=1; $i <= $filas; $i++) { //aca obtengo cada dato de cada columna que necesite
+        
+        $Columna_estado = $hoja_actual->getCellByColumnAndRow(1,$i);
+        $Columna_mes_datos_abastecimiento = strval($hoja_actual->getCellByColumnAndRow(5,$i));
+        $Columna_mes_datos_operatividad = strval($hoja_actual->getCellByColumnAndRow(12,$i));
+
+        $sql_estados = "SELECT * FROM estados WHERE id_estado = $Columna_estado";       
+        $estados = $db->consultaAll('mapa',$sql_estados);
+        $estados = $estados[0]['estado'];
+        $Columna_mes_datos_abastecimiento = round(($Columna_mes_datos_abastecimiento +0)*100);
+        $Columna_mes_datos_operatividad = round(($Columna_mes_datos_operatividad +0)*100);
+
+
+        //INYECCION DE DATOS
+        $sql_insertar_reporte = "INSERT INTO `reporte` (`id`, `ubicacion_reporte`, `fecha`, `id_tabla`, `id_estado`, `id_revision`) 
+        VALUES (NULL, '$estados', '2022-04-30', 3, $Columna_estado , 1)";
+        $stmt = $db->consultaAll('mapa',$sql_insertar_reporte);
+        $id_reporte = $stmt->{'insert_id'};
+
+        if ($stmt) {
+            $sql_insertar_operatividad = "INSERT INTO `operatividad_abastecimiento` (`id`, `id_estado`, `porcentaje_operatividad`, `porcentaje_abastecimiento`, `observacion`, `id_reporte`) 
+            VALUES (NULL, $Columna_estado , $Columna_mes_datos_operatividad, $Columna_mes_datos_abastecimiento , 'N/A', $id_reporte)";
+            $stmt2 = $db->consultaAll('mapa',$sql_insertar_reporte);
+
+            if ($stmt2) {
+                var_dump($i." ABRIL");
+            }
+        }
+        //INYECCION DE DATOS
+    }
+
+    //FOR DE MAYO
+    for ($i=1; $i <= $filas; $i++) { //aca obtengo cada dato de cada columna que necesite
+        
+        $Columna_estado = $hoja_actual->getCellByColumnAndRow(1,$i);
+        $Columna_mes_datos_abastecimiento = strval($hoja_actual->getCellByColumnAndRow(6,$i));
+        $Columna_mes_datos_operatividad = strval($hoja_actual->getCellByColumnAndRow(13,$i));
+
+        $sql_estados = "SELECT * FROM estados WHERE id_estado = $Columna_estado";       
+        $estados = $db->consultaAll('mapa',$sql_estados);
+        $estados = $estados[0]['estado'];
+        $Columna_mes_datos_abastecimiento = round(($Columna_mes_datos_abastecimiento +0)*100);
+        $Columna_mes_datos_operatividad = round(($Columna_mes_datos_operatividad +0)*100);
+
+
+        //INYECCION DE DATOS
+        $sql_insertar_reporte = "INSERT INTO `reporte` (`id`, `ubicacion_reporte`, `fecha`, `id_tabla`, `id_estado`, `id_revision`) 
+        VALUES (NULL, '$estados', '2022-05-30', 3, $Columna_estado , 1)";
+        $stmt = $db->consultaAll('mapa',$sql_insertar_reporte);
+        $id_reporte = $stmt->{'insert_id'};
+
+        if ($stmt) {
+            $sql_insertar_operatividad = "INSERT INTO `operatividad_abastecimiento` (`id`, `id_estado`, `porcentaje_operatividad`, `porcentaje_abastecimiento`, `observacion`, `id_reporte`) 
+            VALUES (NULL, $Columna_estado , $Columna_mes_datos_operatividad, $Columna_mes_datos_abastecimiento , 'N/A', $id_reporte)";
+            $stmt2 = $db->consultaAll('mapa',$sql_insertar_reporte);
+
+            if ($stmt2) {
+                var_dump($i." MAYO");
+            }
+        }
+        //INYECCION DE DATOS
+    }
+
+    //FOR DE JUNIO
+    for ($i=1; $i <= $filas; $i++) { //aca obtengo cada dato de cada columna que necesite
+        
+        $Columna_estado = $hoja_actual->getCellByColumnAndRow(1,$i);
+        $Columna_mes_datos_abastecimiento = strval($hoja_actual->getCellByColumnAndRow(7,$i));
+        $Columna_mes_datos_operatividad = strval($hoja_actual->getCellByColumnAndRow(14,$i));
+
+        $sql_estados = "SELECT * FROM estados WHERE id_estado = $Columna_estado";       
+        $estados = $db->consultaAll('mapa',$sql_estados);
+        $estados = $estados[0]['estado'];
+        $Columna_mes_datos_abastecimiento = round(($Columna_mes_datos_abastecimiento +0)*100);
+        $Columna_mes_datos_operatividad = round(($Columna_mes_datos_operatividad +0)*100);
+
+
+        //INYECCION DE DATOS
+        $sql_insertar_reporte = "INSERT INTO `reporte` (`id`, `ubicacion_reporte`, `fecha`, `id_tabla`, `id_estado`, `id_revision`) 
+        VALUES (NULL, '$estados', '2022-06-30', 3, $Columna_estado , 1)";
+        $stmt = $db->consultaAll('mapa',$sql_insertar_reporte);
+        $id_reporte = $stmt->{'insert_id'};
+
+        if ($stmt) {
+            $sql_insertar_operatividad = "INSERT INTO `operatividad_abastecimiento` (`id`, `id_estado`, `porcentaje_operatividad`, `porcentaje_abastecimiento`, `observacion`, `id_reporte`) 
+            VALUES (NULL, $Columna_estado , $Columna_mes_datos_operatividad, $Columna_mes_datos_abastecimiento , 'N/A', $id_reporte)";
+            $stmt2 = $db->consultaAll('mapa',$sql_insertar_reporte);
+
+            if ($stmt2) {
+                var_dump($i." JUNIO");
+            }
+        }
+        //INYECCION DE DATOS
+    }
+});
+
+///TOMAS ILEGALES
+$app->get('/api/ecxelTomasIlegales', function (Request $request, Response $response) {
+             
+   
+    $hoja_actual= $_SESSION['documento_tomas_ilegales']->getSheet(0);
+    $filas = $hoja_actual->getHighestDataRow();
+    $letra =$hoja_actual->getHighestColumn();
+    $array = [];
+    $cont = null;
+    //var_dump($hoja_actual);
+    $valor = [];
+    $db = New DB();
+    
+    for ($i=1; $i <= $filas; $i++) { //aca obtengo cada dato de cada columna que necesite
+        $celda = ('A'.$i);
+        $value_fechas = $hoja_actual->getCell('A'.$i)->getValue();
+        $objeto_fechas = PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($value_fechas)->format('Y-m-d');
+        $fecha = strval($objeto_fechas);
+
+        $Columna_estado = $hoja_actual->getCellByColumnAndRow(2,$i);
+        $Columna_municipios = strval($hoja_actual->getCellByColumnAndRow(3,$i));
+        $Columna_parroquia = $hoja_actual->getCellByColumnAndRow(4,$i);
+        $NombreAduccion = $hoja_actual->getCellByColumnAndRow(5,$i);
+        $cant_tomas = $hoja_actual->getCellByColumnAndRow(6,$i);
+        $lps_recuperados = $hoja_actual->getCellByColumnAndRow(7,$i);
+
+        $sql_estados = "SELECT * FROM estados WHERE id_estado = $Columna_estado";       
+        $estados = $db->consultaAll('mapa',$sql_estados);
+        $estados = $estados[0]['estado'];
+
+        
+        $valor_borrar = null;
+
+        //ID MUNICIPIO                   
+        $sql_municipios = "SELECT * FROM municipios WHERE municipios.id_estado = $Columna_estado";
+        $municipios = $db->consultaAll('mapa',$sql_municipios);
+        
+        for ($l=0; $l < count($municipios); $l++) { //aca recorro la consulta para asignarle id a los nombre que necesito en el municipio
+            
+            if (strtoupper($municipios[$l]['municipio']) == $Columna_municipios) {                 
+                $Municipio = $municipios[$l]['id_municipio'];
+            } 
+        }
+
+        if (!isset($Municipio)) {
+            return "error en el Reporte".$i;
+        }
+        //ID MUNICIPIO                   
+        
+
+        //ID PARROQUIA
+        $sql_parroquias = "SELECT * FROM parroquias WHERE parroquias.id_municipio = $Municipio";
+            $parroquias = $db->consultaAll('mapa',$sql_parroquias);
+            for ($j=0; $j < count($parroquias); $j++) { //aca recorro la consulta para asignarle id a los nombre que necesito en la parroquia
+
+                if (strtoupper($parroquias[$j]['parroquia']) == $Columna_parroquia) {
+                    $Parroquia = $parroquias[$j]['id_parroquia']; 
+                } 
+            }
+            if (!isset($Parroquia)) {
+                return "error en el Reporte".$i;
+            } 
+        //ID PARROQUIA
+
+        //INYECCION DE DATOS
+        $sql_insertar_reporte = "INSERT INTO `reporte` (`id`, `ubicacion_reporte`, `fecha`, `id_tabla`, `id_estado`, `id_revision`) 
+                                VALUES (NULL, '$estados', '$fecha', 3, $Columna_estado , 1)";
+        $stmt = $db->consultaAll('mapa',$sql_insertar_reporte);
+        $id_reporte = $stmt->{'insert_id'};
+
+        if ($stmt) {
+            $sql_insertar_tomas = "INSERT INTO `tomas_ilegales` (`id`, `nombre_aduccion`, `id_estado`, `id_municipio`, `id_parroquia`, `sector`, `cantidad_tomas_eliminadas`, `lps`, `id_reporte`, `lps_recuperados`) 
+                                VALUES (NULL, '$NombreAduccion', $Columna_estado, $Municipio, $Parroquia, 'N/A', $cant_tomas, $lps_recuperados, $id_reporte, $lps_recuperados)";
+
+            
+            $stmt2 = $db->consultaAll('mapa',$sql_insertar_tomas);
+
+            if (!$stmt2) {
+            return "error en el reporte ".$i;
+            }
+
+        }else {
+            return "error en el reporte ".$i;
+        }
+        
+        //INYECCION DE DATOS
+        var_dump($i);
+
+    }
+
+});
+
+///FUGAS 
+$app->get('/api/ecxelFugas', function (Request $request, Response $response) {
+             
+   
+    $hoja_actual= $_SESSION['documento_fugas']->getSheet(0);
+    $filas = $hoja_actual->getHighestDataRow();
+    $letra =$hoja_actual->getHighestColumn();
+    $array = [];
+    $cont = null;
+    //var_dump($hoja_actual);
+    $valor = [];
+    $db = New DB();
+    
+    for ($i=1; $i <= $filas; $i++) { //aca obtengo cada dato de cada columna que necesite
+        $celda = ('A'.$i);
+        $value_fechas = $hoja_actual->getCell('A'.$i)->getValue();
+        $objeto_fechas = PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($value_fechas)->format('Y-m-d');
+        $fecha = strval($objeto_fechas);
+
+        $Columna_estado = $hoja_actual->getCellByColumnAndRow(2,$i);
+        $Columna_municipios = strval($hoja_actual->getCellByColumnAndRow(3,$i));
+        $Nombre_aduccion = strval($hoja_actual->getCellByColumnAndRow(4,$i));
+        $Cant_fugas = $hoja_actual->getCellByColumnAndRow(5,$i);
+        $lps_recuperados = $hoja_actual->getCellByColumnAndRow(6,$i);
+
+        $sql_estados = "SELECT * FROM estados WHERE id_estado = $Columna_estado";       
+        $estados = $db->consultaAll('mapa',$sql_estados);
+        $estados = $estados[0]['estado'];
+
+        
+        $valor_borrar = null;
+
+        //ID MUNICIPIO                   
+        $sql_municipios = "SELECT * FROM municipios WHERE municipios.id_estado = $Columna_estado";
+        $municipios = $db->consultaAll('mapa',$sql_municipios);
+        
+        for ($l=0; $l < count($municipios); $l++) { //aca recorro la consulta para asignarle id a los nombre que necesito en el municipio
+            
+            if (strtoupper($municipios[$l]['municipio']) == $Columna_municipios) {                 
+                $Municipio = $municipios[$l]['id_municipio'];
+            } 
+        }
+
+        if (!isset($Municipio)) {
+            return "error en el Reporte".$i;
+        }
+        
+        //INYECCION DE DATOS
+            $sql_insertar_reporte = "INSERT INTO `reporte` (`id`, `ubicacion_reporte`, `fecha`, `id_tabla`, `id_estado`, `id_revision`) 
+                                    VALUES (NULL, '$estados', '$fecha', 2, $Columna_estado , 1)";
+            $stmt = $db->consultaAll('mapa',$sql_insertar_reporte);
+            $id_reporte = $stmt->{'insert_id'};
+        
+        if ($stmt) {
+            $sql_insertar_fuga = "INSERT INTO `fugas` (`id`, `nombre_aduccion`, `id_estado`, `id_municipio`, `id_parroquia`, `sector`, `cantidad_fugas_reparadas`, `id_reporte`, `lps_recuperados`) 
+                                    VALUES (NULL, '$Nombre_aduccion', $Columna_estado, $Municipio, 0, 'N/A', $Cant_fugas, $id_reporte , $lps_recuperados);";
+            $stmt = $db->consultaAll('mapa',$sql_insertar_fuga);
+         }else{
+            return "error en el reporte".$i;
+         }
+        var_dump($i);
+
+    }
+
+});
+
+///POZOS 
+    $app->get('/api/ecxelPozos', function (Request $request, Response $response) {
+             
+        //POZOS
+        $hoja_actual= $_SESSION['documento']->getSheet(0);
+        $filas = $hoja_actual->getHighestDataRow();
+        $letra =$hoja_actual->getHighestColumn();
+        $cont = null;
+        //var_dump($hoja_actual);
+
+        $db = New DB();
+        $sql_nombre_pozos = "SELECT * FROM pozo";
+        $nombre_pozos = $db->consultaAll('mapa',$sql_nombre_pozos);
+  
+        for ($i=1; $i <= $filas; $i++) { //aca obtengo cada dato de cada columna que necesite
+            $Columna_estado = $hoja_actual->getCellByColumnAndRow(2,$i);
+            $Columna_municipios = $hoja_actual->getCellByColumnAndRow(3,$i);
+            $Columna_parroquia = $hoja_actual->getCellByColumnAndRow(4,$i);
+            $Sector = $hoja_actual->getCellByColumnAndRow(5,$i);
+            $Nombre = $hoja_actual->getCellByColumnAndRow(6,$i);
+            $Lps = $hoja_actual->getCellByColumnAndRow(7,$i);
+            $Poblacion = $hoja_actual->getCellByColumnAndRow(8,$i);
+            //fecha
+            $celda = ('A'.$i);
+            $value_fechas = $hoja_actual->getCell('A'.$i)->getValue();
+            $objeto_fechas = PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($value_fechas)->format('Y-m-d');
+            $fecha = $objeto_fechas;
+            //fecha
+            
+            $sql_estados = "SELECT * FROM estados WHERE id_estado = $Columna_estado";       
+            $estados = $db->consultaAll('mapa',$sql_estados);
+            $estados = $estados[0]['estado'];
+
+            $valor_borrar = null;
+
+
+//NOMBRE POZO
+            for ($y=0; $y < count($nombre_pozos); $y++) { //aca valido que no exista el pozo
+            
+                
+                if (strtoupper($nombre_pozos[$y]['nombre']) == $Nombre) {
+                    $valor_borrar=$i;                                       
+                }                                            
+            }   
+            if ($valor_borrar === $i) {
+                $valor_nombre = "BORRAR";
+                $NombrePozo =  $valor_nombre;                             
+
+            }else {                   
+                $valor_nombre = strval($Nombre);
+                $NombrePozo =  $valor_nombre;                             
+            }        
+//NOMBRE POZO
+
+//ID MUNICIPIO                   
+            $sql_municipios = "SELECT * FROM municipios WHERE municipios.id_estado = $Columna_estado";
+            $municipios = $db->consultaAll('mapa',$sql_municipios);
+            for ($l=0; $l < count($municipios); $l++) { //aca recorro la consulta para asignarle id a los nombre que necesito en el municipio
+
+                if (strtoupper($municipios[$l]['municipio']) == $Columna_municipios) {                 
+                   $Municipio = $municipios[$l]['id_municipio'];
+                } 
+            }
+            if (!isset($Municipio)) {
+                return "error en el Reporte".$i;
+            }
+//ID MUNICIPIO 
+
+//ID PARROQUIA                   
+            $sql_parroquias = "SELECT * FROM parroquias WHERE parroquias.id_municipio = $Municipio";
+            $parroquias = $db->consultaAll('mapa',$sql_parroquias);
+            for ($j=0; $j < count($parroquias); $j++) { //aca recorro la consulta para asignarle id a los nombre que necesito en la parroquia
+
+                if (strtoupper($parroquias[$j]['parroquia']) == $Columna_parroquia) {
+                    $Parroquia = $parroquias[$j]['id_parroquia']; 
+                } 
+            }
+            if (!isset($Parroquia)) {
+                return "error en el Reporte".$i;
+            }           
+//ID PARROQUIA     
+
+//INYECCION DE DATOS
+            $insertar_pozo = "  INSERT INTO `pozo` (`id`, `nombre`, `operatividad`, `lps`, `id_estado`, `id_municipio`, `id_parroquia`, `sector`, `poblacion`) 
+            VALUES (NULL, '$NombrePozo', 1 , $Lps , $Columna_estado , $Municipio , $Parroquia , '$Sector' , $Poblacion)";
+                
+            $stmt_pozo = $db->consultaAll('mapa',$insertar_pozo);
+
+            if ($stmt_pozo) {
+                $id_pozo = $stmt_pozo->{'insert_id'};
+                $insertar_reporte ="INSERT INTO `reporte` (`id`, `ubicacion_reporte`, `fecha`, `id_tabla`, `id_estado`, `id_revision`) 
+                                    VALUES (NULL, '$estados', '$fecha', 1, $Columna_estado, 1)";
+                $stmt_reporte = $db->consultaAll('mapa',$insertar_reporte);
+                
+                if ($stmt_reporte) {
+                $id_reporte = $stmt_reporte->{'insert_id'};
+                $insertar_rehabilitacion = "INSERT INTO `rehabilitacion_pozo` (`id`, `lps`, `id_pozo`, `id_reporte`) 
+                                            VALUES (NULL, $Lps , $id_pozo , $id_reporte)";
+                $stmt_rehab = $db->consultaAll('mapa',$insertar_rehabilitacion);
+                
+                
+                if (!$stmt_rehab) {
+                return "error inyeccion Rehabilitacion".$i;
+                }
+                }else {
+                    return "error inyeccion Reporte".$i;
+                }
+                
+            }else {
+                return "error inyeccion Pozo".$i;
+            }
+            var_dump($i);
+
+        }
+
+    });
+
+//////////////////////////////////////////////////////FIN MIGRACION/////////////////////////////////////////
